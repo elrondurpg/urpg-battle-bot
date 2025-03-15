@@ -1,0 +1,1 @@
+export const BATTLE_THREAD_TAG = "battle-room-";
