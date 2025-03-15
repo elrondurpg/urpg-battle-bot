@@ -1,15 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import {
-  ButtonStyleTypes,
-  InteractionResponseFlags,
   InteractionResponseType,
   InteractionType,
-  MessageComponentTypes,
   verifyKeyMiddleware,
 } from 'discord-interactions';
-import { getRandomEmoji, DiscordRequest } from './utils.js';
-import { getShuffledOptions, getResult } from './game.js';
 import { getRoute } from './infrastructure/interactions/interaction-router.js'
 
 // Create an express app

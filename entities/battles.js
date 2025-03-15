@@ -40,14 +40,14 @@ export class BattleRules {
     zmovesAllowed = true;
     dynamaxAllowed = true;
     teraAllowed = true;
-    legendsAllowed = true;
     worldCoronationClause = true;
+    legendsAllowed = true;
     randomClause = false;
     inversionClause = false;
     skyClause = false;
     gameboyClause = false;
     wonderLauncherClause = false;
-    rentalClause = false;
+    rentalClause = true;
 }
 
 export class BattleIdCollisionError extends Error {}

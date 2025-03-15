@@ -1,4 +1,4 @@
-import { InteractionResponseType } from 'discord-interactions';
+import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BattleIdCollisionError } from '../../../entities/battles.js';
 import { createPublicThread } from '../../threads/thread-service.js';
 import { sendTextMessage } from '../../messages/message-service.js';
@@ -20,6 +20,16 @@ export const onCreateBattle = (req, res) => {
 }
 
 async function createDiscordBattle(req, res) {
+    const channelName = req.body.channel.name;
+    if ("battle-search" != channelName) {
+        return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                flags: InteractionResponseFlags.EPHEMERAL,
+                content: `This server has limited the use of /create-battle to the #battle-search channel.`
+            }
+        });
+    }
     const context = req.body.context;
     const userId = context === 0 ? req.body.member.user.id : req.body.user.id;
 
@@ -43,6 +53,7 @@ async function createDiscordBattle(req, res) {
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
+                flags: InteractionResponseFlags.EPHEMERAL,
                 content: `Created a battle room!`
             }
         });
@@ -54,6 +65,7 @@ async function createDiscordBattle(req, res) {
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
+                flags: InteractionResponseFlags.EPHEMERAL,
                 content: message
             }
         });
@@ -64,6 +76,7 @@ function sendMessageOnBattleIdCollision(res) {
     return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
+            flags: InteractionResponseFlags.EPHEMERAL,
             content: `Couldn't create the requested battle room. Please try again.`,
         }
     });
