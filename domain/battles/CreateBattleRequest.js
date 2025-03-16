@@ -1,5 +1,5 @@
-import * as ValidationRules from "../../utils/ValidationRules.js";
 import { BATTLE_TYPES, SEND_TYPES, TEAM_TYPES, GENERATIONS } from "../../entities/battles.js";
+import { BadRequestError } from "../../utils/BadRequestError.js";
 
 export const MIN_TEAM_SIZE = 1;
 export const MAX_TEAM_SIZE = 6;
@@ -30,7 +30,7 @@ function isValidTeamSize(teamSize) {
 
 function isValidGeneration(generation) {
     if (generation == null || !GENERATIONS.find(type => type.toLowerCase() === generation.trim().toLowerCase())) {
-        throw new ValidationRules.ValidationError (`${generation} is not a valid generation. Valid generations: ${GENERATIONS}`);
+        throw new BadRequestError (`${generation} is not a valid generation. Valid generations: ${GENERATIONS}`);
     }
     else {
         return true;
@@ -39,7 +39,7 @@ function isValidGeneration(generation) {
 
 function isValidSendType(sendType) {
     if (sendType == null || !SEND_TYPES.find(type => type.toLowerCase() === sendType.trim().toLowerCase())) {
-        throw new ValidationRules.ValidationError (`${sendType} is not a valid send type. Valid send types: ${SEND_TYPES}`);
+        throw new BadRequestError (`${sendType} is not a valid send type. Valid send types: ${SEND_TYPES}`);
     }
     else {
         return true;
@@ -48,7 +48,7 @@ function isValidSendType(sendType) {
 
 function isValidTeamType(teamType) {
     if (teamType == null || !TEAM_TYPES.find(type => type.toLowerCase() === teamType.trim().toLowerCase())) {
-        throw new ValidationRules.ValidationError (`${teamType} is not a valid team type. Valid team types: ${TEAM_TYPES}`);
+        throw new BadRequestError (`${teamType} is not a valid team type. Valid team types: ${TEAM_TYPES}`);
     }
     else {
         return true;
@@ -57,7 +57,7 @@ function isValidTeamType(teamType) {
 
 function isValidBattleType(battleType) {
     if (battleType == null || !BATTLE_TYPES.find(type => type.toLowerCase() === battleType.trim().toLowerCase())) {
-        throw new ValidationRules.ValidationError (`${battleType} is not a valid battle type. Valid battle types: ${BATTLE_TYPES}`);
+        throw new BadRequestError (`${battleType} is not a valid battle type. Valid battle types: ${BATTLE_TYPES}`);
     }
     else {
         return true;

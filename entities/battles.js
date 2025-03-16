@@ -8,13 +8,15 @@ export const STARTING_TERRAINS = [ "Building", "Cave", "Ice", "Puddles", "Sand/B
 export class Battle {
     id;
     ownerId;
-    playerIds = [];
     teams = [];
     rules;
     started = false;
 
+    trainers = new Map();
+    pokemonIndex = 0;
+
     getNumPlayersNeeded() {
-        return this.rules.numTeams * this.rules.numTrainersPerTeam - this.playerIds.length;
+        return this.rules.numTeams * this.rules.numTrainersPerTeam - this.trainers.size;
     }
 }
 

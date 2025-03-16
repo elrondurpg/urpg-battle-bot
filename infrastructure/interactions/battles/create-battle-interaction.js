@@ -4,7 +4,7 @@ import { createPublicThread } from '../../threads/thread-service.js';
 import { sendTextMessage } from '../../messages/message-service.js';
 import { BATTLE_SERVICE } from '../../../dependency-injection.js';
 import { CreateBattleRequest } from '../../../domain/battles/CreateBattleRequest.js';
-import { ValidationError } from '../../../utils/ValidationRules.js';
+import { BadRequestError } from '../../../utils/BadRequestError.js';
 import { getOptionValue } from '../../../commands.js';
 import { capitalize } from '../../../utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
@@ -57,11 +57,11 @@ async function createDiscordBattle(req, res) {
                 content: `Created a battle room!`
             }
         });
-    } catch (e) {
-        let message = typeof(e) == ValidationError 
-            ? e.message 
+    } catch (err) {
+        let message = err instanceof BadRequestError 
+            ? err.message 
             : 'A battle could not be created from the provided data.';
-        console.log(e.message);
+
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {

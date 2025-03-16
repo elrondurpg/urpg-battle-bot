@@ -1,8 +1,9 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BATTLE_SERVICE } from '../../../dependency-injection.js';
-import { PlayerAlreadyAddedError } from '../../../domain/battles/battleService.js';
-import { BATTLE_THREAD_TAG } from '../../../constants.js';
 import { sendTextMessage } from '../../messages/message-service.js';
+import { BATTLE_THREAD_TAG } from '../../../constants.js';
+import * as ValidationRules from '../../../utils/ValidationRules.js';
+import { BadRequestError } from '../../../utils/BadRequestError.js';
 
 export const joinBattle = (req, res) => {
     return joinDiscordBattle(req, res)
@@ -14,33 +15,25 @@ async function joinDiscordBattle(req, res) {
 
     const channelName = req.body.channel.name;
     const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
-    if (channelName.substr(0, 12) !== BATTLE_THREAD_TAG) {
+    if (ValidationRules.isBattleThread(channelName)) {
         return getInvalidChannelMessage(res);
     }
     try {
         let battle = BATTLE_SERVICE.addPlayer(battleId, userId);
-        let playerAdded = false;
-        for (let id of battle.playerIds) {
-            if (id == userId) {
-                playerAdded = true;
-            }
-        }
-        if (playerAdded) {
-            let successMessage = getSuccessMessage(res, userId);
+        if (battle.trainers.has(userId)) {
+            sendSuccessMessage(res, userId);
             const channelId = req.body.channel.id;
             sendTextMessage(channelId, getBattleStartMessage(battle));
         }
-        else {
-            if (battle.started) {
-                return getBattleAlreadyStartedMessage(res);
-            }
-            else {
-                return getBattleAlreadyFullMessage(res);
-            }
-        }
     } catch (err) {
-        if (err instanceof PlayerAlreadyAddedError) {
-            return getPlayerAlreadyAddedMessage(res);
+        if (err instanceof BadRequestError) {
+            return res.send({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    flags: InteractionResponseFlags.EPHEMERAL,
+                    content: err.message
+                }
+            });
         }
     }
 }
@@ -55,8 +48,8 @@ function getInvalidChannelMessage(res) {
     });
 }
 
-function getSuccessMessage(res, userId) {
-    return res.send({
+function sendSuccessMessage(res, userId) {
+    res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
             content: `<@${userId}> joined the battle!`
@@ -67,7 +60,7 @@ function getSuccessMessage(res, userId) {
 function getBattleStartMessage(battle) {
     let message = "**Battle Start**\n\n";
 
-    message += `<@${battle.teams[0][0]}> vs. <@${battle.teams[1][0]}>\n\n`;
+    message += `<@${battle.teams[0][0].id}> vs. <@${battle.teams[1][0].id}>\n\n`;
 
     message += `**Each player must send ${battle.rules.numPokemonPerTrainer} Pokémon!**\n`;
     message += "Use \`/send\` to send a Pokémon. Your team will be hidden from your opponent";
@@ -77,35 +70,6 @@ function getBattleStartMessage(battle) {
     message += battle.rules.teamType == "full" 
         ? ".\n"
         : " until all sends have been received.\n";
+    console.log(battle);
     return message;
-}
-
-function getBattleAlreadyStartedMessage(res) {
-    return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-            flags: InteractionResponseFlags.EPHEMERAL,
-            content: `Couldn't add you to this battle. It's already started!`
-        }
-    });
-}
-
-function getBattleAlreadyFullMessage(res) {
-    return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-            flags: InteractionResponseFlags.EPHEMERAL,
-            content: `Couldn't add you to this battle. It's already full!`
-        }
-    });
-}
-
-function getPlayerAlreadyAddedMessage(res) {
-    return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-            flags: InteractionResponseFlags.EPHEMERAL,
-            content: `You're already in this battle!`
-        }
-    });
 }
