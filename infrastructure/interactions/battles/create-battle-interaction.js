@@ -1,13 +1,13 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BattleIdCollisionError } from '../../../entities/battles.js';
 import { createPublicThread } from '../../threads/thread-service.js';
-import { sendTextMessage } from '../../messages/message-service.js';
 import { BATTLE_SERVICE } from '../../../dependency-injection.js';
 import { CreateBattleRequest } from '../../../domain/battles/CreateBattleRequest.js';
 import { BadRequestError } from '../../../utils/BadRequestError.js';
 import { getOptionValue } from '../../../commands.js';
 import { capitalize } from '../../../utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
+import { MESSAGE_SERVICE } from '../../../dependency-injection.js';
 
 export const onCreateBattle = (req, res) => {
     try {
@@ -46,10 +46,19 @@ async function createDiscordBattle(req, res) {
 
     try {
         let battle = BATTLE_SERVICE.create(request);
+        if (req.body.member.user.nick != undefined) {
+            battle.trainers.get(userId).name = req.body.member.nick;
+        }
+        else {
+            battle.trainers.get(userId).name = req.body.member.user.global_name;
+        }
         const channelId = req.body.channel.id;
         const threadName = `${BATTLE_THREAD_TAG}${battle.id}`;
         let thread = await createPublicThread(channelId, threadName);
-        await sendTextMessage(thread.id, getBattleThreadInitialMessageContent(battle));
+        let options = {
+            threadId: thread.id
+        }
+        await MESSAGE_SERVICE.sendMessage(getBattleThreadInitialMessageContent(battle), options);
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {

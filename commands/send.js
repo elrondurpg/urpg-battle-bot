@@ -40,7 +40,7 @@ export const sendCommand = {
   };
 
   function createGenderChoices() {
-      const choices = [ "M", "F", "G" ];
+      const choices = [ "M", "F", "N" ];
       const result = [];
   
       for (let choice of choices) {

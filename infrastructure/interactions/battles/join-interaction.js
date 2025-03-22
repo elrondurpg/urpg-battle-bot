@@ -1,9 +1,9 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BATTLE_SERVICE } from '../../../dependency-injection.js';
-import { sendTextMessage } from '../../messages/message-service.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
 import * as ValidationRules from '../../../utils/ValidationRules.js';
 import { BadRequestError } from '../../../utils/BadRequestError.js';
+import { MESSAGE_SERVICE } from '../../../dependency-injection.js';
 
 export const joinBattle = (req, res) => {
     return joinDiscordBattle(req, res)
@@ -21,9 +21,24 @@ async function joinDiscordBattle(req, res) {
     try {
         let battle = BATTLE_SERVICE.addPlayer(battleId, userId);
         if (battle.trainers.has(userId)) {
+            if (req.body.member.user.nick != undefined) {
+                battle.trainers.get(userId).name = req.body.member.nick;
+            }
+            else {
+                battle.trainers.get(userId).name = req.body.member.user.global_name;
+            }
             sendSuccessMessage(res, userId);
-            const channelId = req.body.channel.id;
-            sendTextMessage(channelId, getBattleStartMessage(battle));
+            let options = {
+                threadId: req.body.channel.id
+            }
+            MESSAGE_SERVICE.sendMessage(getBattleStartMessage(battle), options);
+            battle.awaitingChoices = new Map();
+            for (let trainer of battle.trainers.values()) {
+                battle.awaitingChoices.set(trainer.id, {
+                    type: "send",
+                    quantity: battle.rules.numPokemonPerTrainer
+                });
+            }
         }
     } catch (err) {
         if (err instanceof BadRequestError) {
@@ -70,6 +85,5 @@ function getBattleStartMessage(battle) {
     message += battle.rules.teamType == "full" 
         ? ".\n"
         : " until all sends have been received.\n";
-    console.log(battle);
     return message;
 }

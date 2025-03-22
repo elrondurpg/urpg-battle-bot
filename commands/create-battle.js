@@ -10,7 +10,7 @@ export const createBattleCommand = {
       {
         type: 4,
         name: 'team-size',
-        description: 'Choose the number of Pokemon per team',
+        description: 'Choose the number of Pokémon per team',
         choices: createTeamSizeChoices(),
         required: true
       },
@@ -31,7 +31,7 @@ export const createBattleCommand = {
       {
         type: 3,
         name: 'team-type',
-        description: 'Choose when Pokemon teams will be chosen and revealed',
+        description: 'Choose when Pokémon teams will be chosen and revealed',
         choices: createTeamTypeChoices(),
         required: true
       },

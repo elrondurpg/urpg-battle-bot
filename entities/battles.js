@@ -13,7 +13,10 @@ export class Battle {
     started = false;
 
     trainers = new Map();
-    pokemonIndex = 0;
+    trainersByPnum = new Map();
+    awaitingChoices = new Map();
+
+    weather;
 
     getNumPlayersNeeded() {
         return this.rules.numTeams * this.rules.numTrainersPerTeam - this.trainers.size;
