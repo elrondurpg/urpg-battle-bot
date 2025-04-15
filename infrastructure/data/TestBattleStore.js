@@ -87,7 +87,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         trainer2.pokemonIndex = 2;
         trainer2.activePokemon = 1;
         trainer2.position = 'p2';
-        trainer2.move = "firepunch";
+        trainer2.move = "meditate";
 
         let battle = new Battle();
         battle.id = 407835314107200n;
@@ -155,14 +155,6 @@ export class TestBattleStore extends InMemoryBattleStore {
             stream.sendMove(trainer1.id);
             stream.sendMove(trainer2.id);
         }
-        trainer1.move = "scratch";
-        trainer2.switch = 2;
-        stream.sendMove(trainer1.id);
-        stream.sendMove(trainer2.id);
-        trainer1.move = "scratch";
-        trainer2.move = "rest";
-        stream.sendMove(trainer1.id);
-        stream.sendMove(trainer2.id);
 
     }
 }
