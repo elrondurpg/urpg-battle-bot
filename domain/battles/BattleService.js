@@ -15,9 +15,23 @@ export class BattleService {
     get(battleId) {
         return BATTLE_DATA.get(battleId);
     }
+
+    endBattle(battleId) {
+        let battle = BATTLE_DATA.get(battleId);
+        battle.ended = true;
+        BATTLE_DATA.delete(battle);
+    }
     
     addPlayer(battleId, trainerId) {
         let battle = BATTLE_DATA.get(battleId);
+
+        if (!battle) {
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
+        }
+
+        if (battle.ended) {
+            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+        }
 
         if (battle.started) {
             throw new BadRequestError(`Couldn't add you to this battle. It's already started!`);
@@ -55,8 +69,22 @@ export class BattleService {
         if (pokemon.item != undefined) {
             pokemon.item = pokemon.item.trim();
         }
+        if (pokemon.teraType) {
+            pokemon.teraType = pokemon.teraType.trim();
+        }
+        if (pokemon.conversionType) {
+            pokemon.conversionType = pokemon.conversionType.trim();
+        }
 
         let battle = BATTLE_DATA.get(battleId);
+
+        if (!battle) {
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
+        }
+
+        if (battle.ended) {
+            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+        }
         if (battle.trainers.has(trainerId)) {
             let trainer = battle.trainers.get(trainerId);
             if (battle.awaitingChoices.has(trainerId) && battle.awaitingChoices.get(trainerId).type == "send") {
@@ -125,9 +153,35 @@ export class BattleService {
                     pokemon.item = item.name;
                 }
 
+                if (battle.rules.itemClause && hasTrainerSentItemAlready(trainer, item)) {
+                    throw new BadRequestError("The Item Clause prevents you from sending another Pokémon holding that item!");
+                }
+
                 /*if (pokemon.item != undefined && !isItemUserValid(pokemon.item, species)) {
                     throw new BadRequestError(`${pokemon.item} can't be held by ${pokemon.species}!`);
                 }*/
+
+                if (pokemon.teraType) {
+                    let teraTypeName = pokemon.teraType;
+                    let teraType = Showdown.default.Dex.types.get(teraTypeName);
+                    if (teraType.exists) {
+                        pokemon.teraType = teraType.name;
+                    }
+                    else {
+                        throw new BadRequestError(`There is no type named ${teraTypeName}! (from: Tera Type)`);
+                    }
+                }
+
+                if (pokemon.conversionType) {
+                    let conversionTypeName = pokemon.conversionType;
+                    let conversionType = Showdown.default.Dex.types.get(conversionTypeName);
+                    if (conversionType.exists) {
+                        pokemon.conversionType = conversionType.name;
+                    }
+                    else {
+                        throw new BadRequestError(`There is no type named ${conversionTypeName}! (from: Conversion Type)`);
+                    }
+                }
 
                 pokemon.id = trainer.pokemonIndex++;
                 trainer.pokemon.set(pokemon.id, pokemon);
@@ -150,6 +204,14 @@ export class BattleService {
 
     chooseLead(battleId, trainerId, index) {
         let battle = BATTLE_DATA.get(battleId);
+
+        if (!battle) {
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
+        }
+
+        if (battle.ended) {
+            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+        }
         if (battle.trainers.has(trainerId)) {
             if (battle.awaitingChoices.has(trainerId) && battle.awaitingChoices.get(trainerId).type == "lead") {
                 if (index > 0 && index <= battle.rules.numPokemonPerTrainer) {
@@ -178,22 +240,102 @@ export class BattleService {
 
     chooseMove(battleId, trainerId, request) {
         let battle = BATTLE_DATA.get(battleId);
+
+        if (!battle) {
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
+        }
+
+        if (battle.ended) {
+            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+        }
         if (battle.trainers.has(trainerId)) {
             let trainer = battle.trainers.get(trainerId);
             if (battle.awaitingChoices.has(trainerId) && battle.awaitingChoices.get(trainerId).type == "move") {                
                 // if move exists          
-                let moveName = request.move.replace(/[^A-Za-z0-9]/, "").toLowerCase();      
+                let moveName = request.move.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase();
+
+                let activePokemon = battle.getTrainerActivePokemon(trainerId);
+                if (activePokemon.volatiles.mustrecharge) {
+                    if (moveName != 'recharge') {
+                        throw new BadRequestError(`**${activePokemon.species} must recharge!**\nUse \`/move recharge\` this turn.`);
+                    }
+                    else {
+                        trainer.move = moveName;
+                        battle.awaitingChoices.delete(trainerId);
+                        return battle;
+                    }
+                }
+                else if (activePokemon.volatiles.twoturnmove) {
+                    if (moveName != activePokemon.volatiles.twoturnmove.move) {
+                        throw new BadRequestError(`**${activePokemon.species} is using a two-turn move!**\nUse \`/move ${activePokemon.volatiles.twoturnmove.move}\` this turn.`);
+                    }
+                    else {
+                        trainer.move = moveName;
+                        battle.awaitingChoices.delete(trainerId);
+                        return battle;
+                    }
+                }
+                else if (activePokemon.volatiles.encore) {
+                    if (moveName != activePokemon.volatiles.encore.move && move.id != 'struggle') {
+                        throw new BadRequestError(`**${activePokemon.species} must do an encore!**\nUse \`/move ${activePokemon.volatiles.encore.move}\` this turn.`);
+                    }
+                    else {
+                        trainer.move = moveName;
+                        battle.awaitingChoices.delete(trainerId);
+                        return battle;
+                    }
+                }
+                else if (activePokemon.getMoves().length == 0 && moveName != "struggle") {
+                    throw new BadRequestError(`**${activePokemon.species} has no moves left!**\nUse \`/move struggle\` this turn.`);
+                }
+                
                 const move = Showdown.default.Dex.moves.get(moveName);
                 if (!isMoveValid(move)) {
                     throw new BadRequestError(`There is no move named ${moveName}!`);
                 }
 
+                if (battle.rules.ohkoClause && move.ohko) {
+                    throw new BadRequestError(`You can't select ${move.name} when OHKO Clause is on!`);
+                }
+
+                if (activePokemon.volatiles.taunt) {
+                    if (!move.isZ && !move.isMax && move.category === 'Status' && move.id !== 'mefirst') {
+                        throw new BadRequestError(`**${activePokemon.species} can't use ${move.name} after the Taunt!**\nUse \`/move\` to choose another move.`);
+                    }
+                    else {
+                        trainer.move = moveName;
+                        battle.awaitingChoices.delete(trainerId);
+                        return battle;
+                    }
+                }
+                else if (activePokemon.volatiles.torment && activePokemon.lastMove && move.id == activePokemon.lastMove.id) {
+                    throw new BadRequestError(`**${activePokemon.species} can't use ${move.name} after the Torment!**\nUse \`/move\` to choose another move.`);
+                }
+                else if (activePokemon.volatiles.disable && move.id == activePokemon.volatiles.disable.move) {
+                    throw new BadRequestError(`**${activePokemon.species}'s ${move.name} is disabled!**\nUse \`/move\` to choose another move.`);
+                }
+                else if (activePokemon.volatiles.choicelock) {
+                    if (move.id != activePokemon.volatiles.choicelock.move && move.id != 'struggle') {
+                        throw new BadRequestError(`**${activePokemon.species}'s choices are restricted by its item!**\nUse \`/move ${activePokemon.volatiles.choicelock.move}\` this turn.`);
+                    }
+                    else {
+                        trainer.move = moveName;
+                        battle.awaitingChoices.delete(trainerId);
+                        return battle;
+                    }
+                }
+
+                let knownMove = activePokemon.getMoves().find(knownMove => knownMove.id == move.id);
+                if (knownMove && knownMove.disabled) {
+                    throw new BadRequestError(`**${activePokemon.species}'s ${move.name} is disabled!**\nUse \`/move\` to choose another move.`);
+                }
+                
+
                 if (move.isZ != false) {
                     throw new BadRequestError(`To use a Z-Move, use \`/move\` to choose the base move and submit \`z-move = True\`!`);
                 }
-
-                let activePokemon = trainer.getActivePokemon();
-                const species = Showdown.default.Dex.species.get(activePokemon.species);
+                
+                let species = Showdown.default.Dex.species.get(activePokemon.species);
                 if (species.battleOnly != undefined) {
                     species = Showdown.default.Dex.species.get(species.battleOnly);
                 }
@@ -247,38 +389,128 @@ export class BattleService {
 
                 let choices = [ 
                     request.shouldDynamax, 
-                    request.shouldGigantamax,
                     request.shouldMegaEvolve,
+                    request.shouldUltraBurst,
                     request.shouldTerastallize,
-                    request.shouldZmove
+                    request.shouldZMove
                 ];
                 if (choices.filter(Boolean).length > 1) {
-                    throw new BadRequestError(`You can only choose one of the following per turn: Dynamax, Gigantamax, Mega Evolve, Terastallize, Use Z-Move!`);
+                    throw new BadRequestError(`You can only choose one of the following per turn: Dynamax, Mega Evolve, Ultra Burst, Terastallize, Use Z-Move!`);
                 }
-                // if pokemon should dynamax 
-                    // if trainer has already dynamaxed
-                    // if world coronation series and trainer has already mega evolved, terastallized, or z-moved
-
-                // if pokemon should gigantamax 
-                    // if trainer has already dynamaxed
-                    // if world coronation series and trainer has already mega evolved, terastallized, or z-moved
-
-                // if pokemon should mega evolve 
-                    // if trainer has already mega evolved
-                    // if world coronation series and trainer has already dynamaxed, terastallized, or z-moved
-
-                // if pokemon should terastallize 
-                    // if trainer has already terastallized
-                    // if world coronation series and trainer has already dynamaxed, mega evolved, or z-moved
-
-                // if pokemon should z-move 
-                    // if trainer has already z-moved
-                    // if world coronation series and trainer has already dynamaxed, mega evolved, or terastallized
-
+                if (request.shouldDynamax) {
+                    if (battle.rules.dynamaxAllowed) {
+                        if (trainer.hasDynamaxed) {
+                            throw new BadRequestError(`You can only Dynamax once per battle!`);
+                        }
+                        else if (trainer.hasMegaEvolved || trainer.hasTerastallized || trainer.hasUsedZMove) {
+                            throw new BadRequestError(`You can only use one of the following per battle in a World Coronation Series match: Dynamax, Mega Evolve, Terastallize, Use Z-Move!`);
+                        }
+                        else {
+                            battle.tryDynamax(trainer);
+                        }
+                    }
+                    else {
+                        throw new BadRequestError(`Dynamaxing is not allowed in this battle!`);
+                    }
+                }
+                if (request.shouldMegaEvolve) {
+                    if (battle.rules.megasAllowed) {
+                        if (trainer.hasMegaEvolved) {
+                            throw new BadRequestError(`You can only Mega Evolve once per battle!`);
+                        }
+                        else if (trainer.hasDynamaxed || trainer.hasTerastallized || trainer.hasUsedZMove) {
+                            throw new BadRequestError(`You can only use one of the following per battle in a World Coronation Series match: Dynamax, Mega Evolve, Terastallize, Use Z-Move!`);
+                        }
+                        else {
+                            battle.tryMegaEvolve(trainer);
+                        }
+                    }
+                    else {
+                        throw new BadRequestError(`Mega Evolving is not allowed in this battle!`);
+                    }
+                }
+                if (request.shouldUltraBurst) {
+                    if (battle.rules.megasAllowed) {
+                        if (trainer.hasMegaEvolved) {
+                            throw new BadRequestError(`You can only Mega Evolve once per battle! (Ultra Burst counts as Mega Evolution in URPG.)`);
+                        }
+                        else if (trainer.hasDynamaxed || trainer.hasTerastallized || trainer.hasUsedZMove) {
+                            throw new BadRequestError(`You can only use one of the following per battle in a World Coronation Series match: Dynamax, Mega Evolve (or Ultra Burst), Terastallize, Use Z-Move!`);
+                        }
+                        else {
+                            battle.tryUltraBurst(trainer);
+                        }
+                    }
+                    else {
+                        throw new BadRequestError(`Ultra Burst is not allowed in this battle because Mega Evolving is not allowed!`);
+                    }
+                }
+                if (request.shouldTerastallize) {
+                    if (battle.rules.teraAllowed) {
+                        if (trainer.hasTerastallized) {
+                            throw new BadRequestError(`You can only Terastallize once per battle!`);
+                        }
+                        else if (trainer.hasDynamaxed || trainer.hasMegaEvolved || trainer.hasUsedZMove) {
+                            throw new BadRequestError(`You can only use one of the following per battle in a World Coronation Series match: Dynamax, Mega Evolve, Terastallize, Use Z-Move!`);
+                        }
+                        else {
+                            trainer.terastallize = true;
+                        }
+                    }
+                    else {
+                        throw new BadRequestError(`Terastallizing is not allowed in this battle!`);
+                    }
+                }
+                if (request.shouldZMove) {
+                    if (battle.rules.zmovesAllowed) {
+                        if (trainer.hasUsedZMove) {
+                            throw new BadRequestError(`You can only use a Z-Move once per battle!`);
+                        }
+                        else if (trainer.hasDynamaxed || trainer.hasMegaEvolved || trainer.hasTerastallized) {
+                            throw new BadRequestError(`You can only use one of the following per battle in a World Coronation Series match: Dynamax, Mega Evolve, Terastallize, Use Z-Move!`);
+                        }
+                        else {
+                            battle.tryUseZMove(trainer, moveName);
+                        }
+                    }
+                    else {
+                        throw new BadRequestError(`Z-Moves are not allowed in this battle!`);
+                    }
+                }
 
                 trainer.move = moveName;
                 battle.awaitingChoices.delete(trainerId);
                 return battle;
+            }
+            else {
+                throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
+            }
+        }
+        else {
+            throw new BadRequestError("You are not involved in this battle!");
+        }
+    }
+
+    chooseSwitch(battleId, trainerId, pokemonId) {
+        let battle = BATTLE_DATA.get(battleId);
+
+        if (!battle) {
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
+        }
+
+        if (battle.ended) {
+            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+        }
+        if (battle.trainers.has(trainerId)) {
+            if (battle.awaitingChoices.has(trainerId) && (battle.awaitingChoices.get(trainerId).type == "move" || battle.awaitingChoices.get(trainerId).type == "switch")) {    
+                let activePokemon = battle.getTrainerActivePokemon(trainerId);
+                if (activePokemon.trapped) {
+                    throw new BadRequestError("**You are trapped and cannot switch!**");
+                }
+
+                let trainer = battle.trainers.get(trainerId);
+                trainer.switch = pokemonId;
+                battle.awaitingChoices.delete(trainerId);
             }
             else {
                 throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
@@ -357,6 +589,18 @@ function hasTrainerSentSpeciesAlready(trainer, species) {
             && existingSpecies.baseStats.spe == species.baseStats.spe;
         if (natDexNumMatches && typesMatch && statsMatch) {
             return true;
+        }
+    }
+    return false;
+}
+
+function hasTrainerSentItemAlready(trainer, item) {
+    for (let existingPokemon of trainer.pokemon.values()) {
+        if (existingPokemon.item) {
+            let existingItem = Showdown.default.Dex.items.get(existingPokemon.item);
+            if (existingItem.id == item.id) {
+                return true;
+            }
         }
     }
     return false;

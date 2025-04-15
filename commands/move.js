@@ -19,14 +19,14 @@ export const sendMoveCommand = {
       },
       {
         type: 5,
-        name: 'gigantamax',
-        description: 'Gigantamax your Pokémon',
+        name: 'mega-evolve',
+        description: 'Mega-Evolve your Pokémon',
         required: false
       },
       {
         type: 5,
-        name: 'mega-evolve',
-        description: 'Mega-Evolve your Pokémon',
+        name: 'ultra-burst',
+        description: 'Power up your Pokémon with Ultra Burst',
         required: false
       },
       {

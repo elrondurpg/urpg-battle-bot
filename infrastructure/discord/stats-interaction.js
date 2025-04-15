@@ -1,8 +1,8 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
-import * as ValidationRules from '../../../utils/ValidationRules.js';
-import { BATTLE_THREAD_TAG } from "../../../constants.js";
-import { BATTLE_SERVICE } from "../../../dependency-injection.js";
-import { BadRequestError } from "../../../utils/BadRequestError.js";
+import * as ValidationRules from '../../utils/ValidationRules.js';
+import { BATTLE_THREAD_TAG } from "../../constants.js";
+import { BATTLE_SERVICE } from "../../dependency-injection.js";
+import { BadRequestError } from "../../utils/BadRequestError.js";
 
 export const displayStats = (req, res) => {
     return displayDiscordStats(req, res);
@@ -22,22 +22,11 @@ async function displayDiscordStats(req, res) {
         let battle = BATTLE_SERVICE.get(battleId);
         if (battle.trainers.has(userId)) {
             if (battle.trainers.get(userId).pokemon.size > 0) {
-                let message = "**Your Stats**\n";
-                for (let pokemon of battle.trainers.get(userId).pokemon.values()) {
-                    message += `${pokemon.id}: ${pokemon.species} ${pokemon.gender}, ${pokemon.ability}`;
-                    if (pokemon.item != undefined) {
-                        message += ` @ ${pokemon.item}`;
-                    }
-                    message += "\n";
-                    if (pokemon.hiddenPowerType != undefined) {
-                        message += `---(HP: ${pokemon.hiddenPowerType})\n`;
-                    }
-                }
                 return res.send({
                     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                     data: {
                         flags: InteractionResponseFlags.EPHEMERAL,
-                        content: message
+                        content: battle.printTrainer(userId)
                     }
                 });
             }

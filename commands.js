@@ -6,6 +6,7 @@ import { sendCommand } from './commands/send.js';
 import { leadCommand } from './commands/lead.js';
 import { statsCommand } from './commands/stats.js';
 import { sendMoveCommand } from './commands/move.js';
+import { switchCommand } from './commands/switch.js';
 
 
 export const commands = [
@@ -14,7 +15,8 @@ export const commands = [
   sendCommand,
   leadCommand,
   statsCommand,
-  sendMoveCommand
+  sendMoveCommand,
+  switchCommand
 ];
 
 export function getOptionValue(options, name) {

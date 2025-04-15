@@ -1,8 +1,8 @@
 export class ChooseMoveRequest {
     move;
     shouldDynamax;
-    shouldGigantamax;
     shouldMegaEvolve;
+    shouldUltraBurst;
     shouldTerastallize;
     shouldZMove;
 }

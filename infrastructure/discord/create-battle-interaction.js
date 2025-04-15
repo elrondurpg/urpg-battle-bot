@@ -1,13 +1,13 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
-import { BattleIdCollisionError } from '../../../entities/battles.js';
-import { createPublicThread } from '../../threads/thread-service.js';
-import { BATTLE_SERVICE } from '../../../dependency-injection.js';
-import { CreateBattleRequest } from '../../../domain/battles/CreateBattleRequest.js';
-import { BadRequestError } from '../../../utils/BadRequestError.js';
-import { getOptionValue } from '../../../commands.js';
-import { capitalize } from '../../../utils.js';
-import { BATTLE_THREAD_TAG } from '../../../constants.js';
-import { MESSAGE_SERVICE } from '../../../dependency-injection.js';
+import { BattleIdCollisionError } from '../../entities/battles.js';
+import { createPublicThread } from './thread-service.js';
+import { BATTLE_SERVICE } from '../../dependency-injection.js';
+import { CreateBattleRequest } from '../../domain/battles/CreateBattleRequest.js';
+import { BadRequestError } from '../../utils/BadRequestError.js';
+import { getOptionValue } from '../../commands.js';
+import { capitalize } from '../../utils.js';
+import { BATTLE_THREAD_TAG } from '../../constants.js';
+import { MESSAGE_SERVICE } from '../../dependency-injection.js';
 
 export const onCreateBattle = (req, res) => {
     try {
@@ -67,6 +67,7 @@ async function createDiscordBattle(req, res) {
             }
         });
     } catch (err) {
+        console.log(err.message);
         let message = err instanceof BadRequestError 
             ? err.message 
             : 'A battle could not be created from the provided data.';

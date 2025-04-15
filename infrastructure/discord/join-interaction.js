@@ -1,9 +1,9 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
-import { BATTLE_SERVICE } from '../../../dependency-injection.js';
-import { BATTLE_THREAD_TAG } from '../../../constants.js';
-import * as ValidationRules from '../../../utils/ValidationRules.js';
-import { BadRequestError } from '../../../utils/BadRequestError.js';
-import { MESSAGE_SERVICE } from '../../../dependency-injection.js';
+import { BATTLE_SERVICE } from '../../dependency-injection.js';
+import { BATTLE_THREAD_TAG } from '../../constants.js';
+import * as ValidationRules from '../../utils/ValidationRules.js';
+import { BadRequestError } from '../../utils/BadRequestError.js';
+import { MESSAGE_SERVICE } from '../../dependency-injection.js';
 
 export const joinBattle = (req, res) => {
     return joinDiscordBattle(req, res)

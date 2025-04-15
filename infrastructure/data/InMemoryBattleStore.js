@@ -22,4 +22,8 @@ export class InMemoryBattleStore {
     save(battle) {
         return battle;
     }
+
+    delete(battle) {
+        this._battles.delete(battle.id);
+    }
 }

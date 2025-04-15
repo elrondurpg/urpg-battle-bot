@@ -12,5 +12,13 @@ export function getRoute(req) {
       }
     }
   }
+  else if (type === InteractionType.MESSAGE_COMPONENT) {
+    const name = data.custom_id;
+    for (const command of commands) {
+      if (command.name != undefined && name.startsWith(command.name)) {
+        return command.target;
+      }
+    }
+  }
 
 }

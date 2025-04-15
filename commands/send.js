@@ -35,6 +35,18 @@ export const sendCommand = {
         name: 'hidden-power',
         description: 'Choose the type for Hidden Power',
         required: false
+      },
+      {
+        type: 3, 
+        name: 'tera-type',
+        description: 'Choose the type for Terastallization',
+        required: false
+      },
+      {
+        type: 3, 
+        name: 'conversion-type',
+        description: 'Choose the type for Conversion',
+        required: false
       }
     ]
   };

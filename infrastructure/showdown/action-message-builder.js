@@ -1,3 +1,4 @@
+import { should } from "chai";
 import * as Showdown from "urpg-battle-bot-calc";
 
 const regex = /[^A-Za-z0-9]/g;
@@ -16,9 +17,50 @@ export class ActionMessageBuilder {
     percentage;
     stat;
     source;
+    species;
+    outputmove;
+    type;
+    upkeep;
 
     constructor(action) {
         this.action = action;
+    }
+
+    from(action) {
+        if (action.stat) {
+            this.stat = action.stat;
+        }
+        if (action.fromItem || (action.tokens.some(token => token.includes("[from] item: ")))) {
+            let itemActions = ["start", "end", "activate"];
+            if (itemActions.includes(this.action.replaceAll("-", ""))) {
+                this.action += "FromItem";
+            }
+        }
+        if (action.weak || (action.tokens.some(token => token.includes("[weak]")))) {
+            let weakActions = ["fail"];
+            if (weakActions.includes(this.action.replaceAll("-", ""))) {
+                this.action += "weak";
+            }
+        }
+        if (action.zeffect || (action.tokens.some(token => token.includes("[zeffect]")))) {
+            let zActions = [ "start", "heal", "boost", "boost2", "boost3", "clearBoost" ];
+            if (zActions.includes(this.action.replaceAll("-", ""))) {
+                this.action += "FromZEffect";
+            }
+        }
+        if (!this.item) {
+            let item = action.tokens.find(token => token.includes("item: "));
+            if (item) {
+                this.item = item.replace("[from] ", "").replace("item: ", "");
+            }
+        }
+        if (action.outputmove) {
+            this.outputmove = action.outputmove;
+        }
+        if (action.number) {
+            this.number = action.number;
+        }
+        return this;
     }
 
     setTrainer(trainer) {
@@ -76,6 +118,16 @@ export class ActionMessageBuilder {
         return this;
     }
 
+    setSpecies(species) {
+        this.species = species;
+        return this;
+    }
+
+    setType(type) {
+        this.type = type;
+        return this;
+    }
+
     build() {        
         // get the default text for the action
         let action = this.action.replaceAll(regex, "");
@@ -87,10 +139,15 @@ export class ActionMessageBuilder {
                 this.effect = this.effect.replaceAll("[from] ", "");
             }
             // if the EFFECT is a move, get the action text for that move
-            if (this.effect.includes("move: ")) {
+            let moveName = this.effect.replaceAll("move: ", "").replaceAll(regex, "").toLowerCase();
+            let move = Showdown.default.Dex.textCache.Moves[moveName];
+
+            let shouldShowAbilityActivation = this.effect.includes("ability: ");
+            let abilityName = this.effect.replaceAll("ability: ", "").replaceAll(regex, "").toLowerCase();
+            let ability = action == 'upkeep' ? undefined : Showdown.default.Dex.textCache.Abilities[abilityName];
+
+            if (this.effect.includes("move: ") || (move && !this.move)) {
                 this.effect = this.effect.replaceAll("move: ", "");
-                let moveName = this.effect.replaceAll(regex, "").toLowerCase();
-                let move = Showdown.default.Dex.textCache.Moves[moveName];
                 let text = move[action];
                 if (text) {
                     if (text.startsWith("#.")) {
@@ -107,6 +164,30 @@ export class ActionMessageBuilder {
                     }
                     else {
                         message = text;
+                    }
+                }
+                else {
+                    let effectName = this.effect.replaceAll(regex, "").toLowerCase();
+                    let effect = Showdown.default.Dex.textCache.Default[effectName];
+                    if (effect) {
+                        let text = effect[action];
+                        if (text) {
+                            if (text.startsWith("#.")) {
+                                // if the action text starts with #., 
+                                // use the action text for the action of that name within the same object
+                                message = effect[text.replaceAll("#.", "")];
+                            }
+                            else if (text.startsWith("#")) {
+                                // if the action text starts with #, 
+                                // use the action text for the object of the same type with that name
+                                effectName = text.replaceAll(regex, "").toLowerCase();
+                                effect = Showdown.default.Dex.textCache.Default[effectName];
+                                message = effect[action];
+                            }
+                            else {
+                                message = text;
+                            }
+                        }
                     }
                 }
             }
@@ -137,10 +218,8 @@ export class ActionMessageBuilder {
             }
 
             // if the EFFECT is an ability, get the action text for that ability
-            else if (this.effect.includes("ability: ")) {
+            else if (this.effect.includes("ability: ") || (ability && !this.ability)) {
                 this.effect = this.effect.replaceAll("ability: ", "");
-                let abilityName = this.effect.replaceAll(regex, "").toLowerCase();
-                let ability = Showdown.default.Dex.textCache.Abilities[abilityName];
                 let text = ability[action];
                 if (text) {
                     if (text.startsWith("#.")) {
@@ -158,6 +237,15 @@ export class ActionMessageBuilder {
                     else {
                         message = text;
                     }
+                }
+                if (shouldShowAbilityActivation) {
+                    text = message;
+                    let abilityActivation = new ActionMessageBuilder("abilityActivation")
+                        .setPokemon(this.pokemon)
+                        .setAbility(this.effect)
+                        .build();
+                    message = abilityActivation + "\n";
+                    message += !text.trim().startsWith("(") ? text.trim() : "";
                 }
             }
 
@@ -200,12 +288,26 @@ export class ActionMessageBuilder {
         if (message) {
 
             if (this.trainer) {
-                message = message.replaceAll("[TRAINER]", this.trainer.name);
+                let name = this.trainer;
+                if (this.trainer.name) {
+                    name = this.trainer.name;
+                }
+                message = message.replaceAll("[TRAINER]", name);
             }
+
+            if (this.trainer) {
+                let name = this.trainer;
+                if (this.trainer.name) {
+                    name = this.trainer.name;
+                }
+                message = message.replaceAll("[TEAM]", `${name}'s team`);
+                message = message.replaceAll("[PARTY]", `${name}'s team`);
+            }
+
             if (this.pokemon) {
-                message = message.replaceAll("[NICKNAME]", this.pokemon.getNickname());
-                message = message.replaceAll("[FULLNAME]", this.pokemon.getFullname());
-                message = message.replaceAll("[POKEMON]", this.pokemon.getName());
+                message = message.replaceAll("[POKEMON]", this.pokemon);
+                message = message.replaceAll("[NICKNAME]", this.pokemon);
+                message = message.replaceAll("[FULLNAME]", this.pokemon);
             }
             if (this.number) {
                 message = message.replaceAll("[NUMBER]", this.number);
@@ -213,17 +315,24 @@ export class ActionMessageBuilder {
             if (this.target) {
                 message = message.replaceAll("[TARGET]", this.target);
             }
+            if (this.outputmove) {
+                this.outputmove = this.outputmove.replaceAll("[from] ", "").replaceAll("outputmove: ", "");
+                message = message.replaceAll("[MOVE]", this.outputmove);
+            }
             if (this.move) {
-                message = message.replaceAll("[MOVE]", this.move.replaceAll("[from] move: ", ""));
+                this.move = this.move.replaceAll("[from] ", "").replaceAll("move: ", "");
+                message = message.replaceAll("[MOVE]", this.move);
             }
             if (this.ability) {
-                message = message.replaceAll("[ABILITY]", this.ability.replaceAll("[from] ability: ", ""));
+                this.ability = this.ability.replaceAll("[from] ", "").replaceAll("ability: ", "");
+                message = message.replaceAll("[ABILITY]", this.ability);
             }
             if (this.effect) {
                 message = message.replaceAll("[EFFECT]", this.effect);
             }
             if (this.item) {
-                message = message.replaceAll("[ITEM]", this.item.replaceAll("[from] item: ", ""));
+                this.item = this.item.replaceAll("[from] ", "").replaceAll("item: ", "");
+                message = message.replaceAll("[ITEM]", this.item);
             }
             if (this.percentage) {
                 message = message.replaceAll("[PERCENTAGE]", this.percentage);
@@ -235,7 +344,13 @@ export class ActionMessageBuilder {
             if (this.source) {
                 message = message.replaceAll("[SOURCE]", this.source);
             }
-            return message;
+            if (this.species) {
+                message = message.replaceAll("[SPECIES]", this.species);
+            }
+            if (this.type) {
+                message = message.replaceAll("[TYPE]", this.type);
+            }
+            return message.trim();
         }
     }
 }

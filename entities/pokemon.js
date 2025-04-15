@@ -1,5 +1,6 @@
 export class Pokemon {
     id;
+    nickname;
     species;
     gender;
     ability;
@@ -8,9 +9,12 @@ export class Pokemon {
     currentHp;
     maxHp;
     mimic;
+    useGmaxForm = false;
     boosts = new Map();
     volatileStatuses = [];
     status;
+    teraType;
+    conversionType;
 
     getNickname() {
         return this.species;

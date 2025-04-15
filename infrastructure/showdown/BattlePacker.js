@@ -22,8 +22,14 @@ export class BattlePacker {
 
     getPackedPokemon(pokemon) {
         let packedPokemon = `${pokemon.id}|`;
-        // nickname|species| --only NICKNAME is filled in if the species is the same
-        packedPokemon += `${pokemon.species}||`;
+        if (pokemon.nickname) {
+            // nickname|species| --only NICKNAME is filled in if the species is the same
+            packedPokemon += `${pokemon.nickname}|${pokemon.species}|`;
+        }
+        else {
+            // nickname|species| --only NICKNAME is filled in if the species is the same
+            packedPokemon += `${pokemon.species}||`;
+        }
         // item
         packedPokemon += `${pokemon.item != undefined ? pokemon.item : ''}|`;
         // ability
@@ -38,14 +44,20 @@ export class BattlePacker {
         packedPokemon += `${pokemon.gender}|`;
         // IVs -- blank for all 31s
         packedPokemon += `|`;
-        // Shiny, Level (100), Happiness (255), Pokeball all left blank for defaults
-        packedPokemon += `||,,`;
+        // Shiny, Level (100), Happiness (255) all left blank for defaults
+        packedPokemon += `||,`;
         // Hidden Power Type
         packedPokemon += `${pokemon.hiddenPowerType != undefined ? pokemon.hiddenPowerType : ''},`;
-        // Gigantamax, DynamaxLevel left blank
-        packedPokemon += `,,`;
-        // Tera Type set to normal until implemented
-        packedPokemon += `NORMAL`;
+        // Pokeball left blank for default
+        packedPokemon += `,`;
+        // Gigantamax
+        packedPokemon += `${pokemon.useGmaxForm ? 'G' : ''},`;
+        // DynamaxLevel left blank
+        packedPokemon += `,`;
+        // Tera Type 
+        packedPokemon += `${pokemon.teraType != undefined ? pokemon.teraType : ''},`;
+        // Conversion Type
+        packedPokemon += `${pokemon.conversionType != undefined ? pokemon.conversionType : ''}`;
         return packedPokemon;
     }
 }

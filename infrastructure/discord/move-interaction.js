@@ -1,11 +1,11 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
-import { getOptionValue } from "../../../commands.js";
-import { BATTLE_THREAD_TAG } from "../../../constants.js";
-import { BATTLE_SERVICE } from "../../../dependency-injection.js";
-import * as ValidationRules from '../../../utils/ValidationRules.js';
-import { BadRequestError } from "../../../utils/BadRequestError.js";
-import { streams } from "../../streams/stream-manager.js";
-import { ChooseMoveRequest } from "../../../domain/battles/ChooseMoveRequest.js";
+import { getOptionValue } from "../../commands.js";
+import { BATTLE_THREAD_TAG } from "../../constants.js";
+import { BATTLE_SERVICE } from "../../dependency-injection.js";
+import * as ValidationRules from '../../utils/ValidationRules.js';
+import { BadRequestError } from "../../utils/BadRequestError.js";
+import { streams } from "../showdown/stream-manager.js";
+import { ChooseMoveRequest } from "../../domain/battles/ChooseMoveRequest.js";
 
 export const chooseMove = (req, res) => {
     return chooseDiscordMove(req, res);
@@ -26,8 +26,8 @@ async function chooseDiscordMove(req, res) {
         let request = new ChooseMoveRequest();
         request.move = getOptionValue(options, "move");
         request.shouldDynamax = getOptionValue(options, "dynamax");
-        request.shouldGigantamax = getOptionValue(options, "gigantamax");
         request.shouldMegaEvolve = getOptionValue(options, "mega-evolve");
+        request.shouldUltraBurst = getOptionValue(options, "ultra-burst");
         request.shouldTerastallize = getOptionValue(options, "terastallize");
         request.shouldZMove = getOptionValue(options, "z-move");
         let battle = BATTLE_SERVICE.chooseMove(battleId, userId, request);
@@ -39,17 +39,19 @@ async function chooseDiscordMove(req, res) {
                 content: `Move set!`
             }
         });
+        let stream = streams.get(battle.id);
+        stream.sendMove(userId);
         
-        let allMovesChosen = true;
+        /*let allMovesChosen = true;
         for (let trainer of battle.trainers.values()) {
-            if (trainer.move == undefined) {
+            if (trainer.move == undefined && trainer.switch == undefined) {
                 allMovesChosen = false;
             }
         }
         if (allMovesChosen) {
             let stream = streams.get(battle.id);
             stream.sendMoves();
-        }    
+        }    */
     } catch (err) {
         if (err instanceof BadRequestError) {
             return res.send({
@@ -62,4 +64,14 @@ async function chooseDiscordMove(req, res) {
         }
         console.log(err);
     }
+}
+
+function getInvalidChannelMessage(res) {
+    return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: "This is not a battle thread!",
+            flags: InteractionResponseFlags.EPHEMERAL
+        }
+    });
 }

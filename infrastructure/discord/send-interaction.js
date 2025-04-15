@@ -1,10 +1,10 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
-import { getOptionValue } from '../../../commands.js';
-import { BATTLE_THREAD_TAG } from '../../../constants.js';
-import { BATTLE_SERVICE } from '../../../dependency-injection.js';
-import { Pokemon } from '../../../entities/pokemon.js';
-import { BadRequestError } from '../../../utils/BadRequestError.js';
-import { createStream } from '../../streams/stream-manager.js';
+import { getOptionValue } from '../../commands.js';
+import { BATTLE_THREAD_TAG } from '../../constants.js';
+import { BATTLE_SERVICE } from '../../dependency-injection.js';
+import { Pokemon } from '../../entities/pokemon.js';
+import { BadRequestError } from '../../utils/BadRequestError.js';
+import { createStream } from '../showdown/stream-manager.js';
 
 export const sendPokemon = (req, res) => {
     return sendPokemonInDiscord(req, res)
@@ -29,6 +29,8 @@ async function sendPokemonInDiscord(req, res) {
         pokemon.ability = getOptionValue(options, "ability");
         pokemon.hiddenPowerType = getOptionValue(options, "hidden-power");
         pokemon.item = getOptionValue(options, "item");
+        pokemon.teraType = getOptionValue(options, "tera-type");
+        pokemon.conversionType = getOptionValue(options, "conversion-type");
 
         let battle = BATTLE_SERVICE.addPokemon(battleId, userId, pokemon);
         await res.send({
@@ -43,7 +45,9 @@ async function sendPokemonInDiscord(req, res) {
             let streamOptions = {
                 threadId: req.body.channel.id
             };
-            createStream(battle, streamOptions).sendStart();
+            let stream = createStream(battle, streamOptions);
+            stream.sendStart();
+            battle.stream = stream;
         }
     } catch (err) {
         if (err instanceof BadRequestError) {

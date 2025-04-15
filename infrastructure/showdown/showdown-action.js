@@ -1,13 +1,14 @@
-const pokemonLongRegex = /p\d+[a-z]+: .+/;
+export const pokemonLongRegex = /p\d+[a-z]+: .+/;
 const pokemonOwnerRegex = /(p\d+)[a-z]+: .+/;
 const pokemonPositionRegex = /p\d+([a-z]+): .+/;
 const pokemonNameRegex = /p\d+[a-z]+: (.+)/;
 const hpRegex = /(\d+\/\d+)\s*.*/;
 const statusRegex = /\d+\/\d+\s*(.*)/;
+const trainerRegex = /p\d+: (.+)/;
 
 export class ShowdownAction {
+    tokens;
     ability;
-    action;
     amount;
     attacker;
     condition;
@@ -31,9 +32,36 @@ export class ShowdownAction {
     status;
     target;
     weather;    
+    outputmove;
+    fromItem = false;
+    zeffect = false;
+    type;
 
-    constructor(action) {
-        this.action = action;
+    constructor(tokens) {
+        this.tokens = tokens;
+
+        let stat = tokens.find(token => token.includes("stat: "));
+        if (stat) {
+            this.stat = stat.replace("stat: ", "");
+        }
+
+        let outputmove = tokens.find(token => token.includes("outputmove: "));
+        if (outputmove) {
+            this.outputmove = outputmove.replace("outputmove: ", "");
+        }
+
+        let number = tokens.find(token => token.includes("number: "));
+        if (number) {
+            this.number = number.replace("number: ", "");
+        }
+
+        if (tokens.includes("[fromitem]")) {
+            this.fromItem = true;
+        }
+
+        if (tokens.includes("[zeffect]")) {
+            this.zeffect = true;
+        }
     }
 
     setAbility(ability) {
@@ -156,6 +184,17 @@ export class ShowdownAction {
         return this;
     }
 
+    setType(type) {
+        this.type = type;
+        return this;
+    }
+
+    getSide() {
+        if (this.side && this.side.match(trainerRegex)) {
+            return trainerRegex.exec(this.side)[1];
+        }
+    }
+
     getPokemonOwner() {
         if (this.pokemon && this.pokemon.match(pokemonLongRegex)) {
             return pokemonOwnerRegex.exec(this.pokemon)[1];
@@ -171,6 +210,25 @@ export class ShowdownAction {
     getPokemonName() {
         if (this.pokemon && this.pokemon.match(pokemonLongRegex)) {
             return pokemonNameRegex.exec(this.pokemon)[1];
+        }
+    }
+
+    
+    getSpeciesOwner() {
+        if (this.species && this.species.match(pokemonLongRegex)) {
+            return pokemonOwnerRegex.exec(this.species)[1];
+        }
+    }
+
+    getSpeciesPosition() {
+        if (this.species && this.species.match(pokemonLongRegex)) {
+            return pokemonPositionRegex.exec(this.species)[1];
+        }
+    }
+
+    getSpeciesName() {
+        if (this.species && this.species.match(pokemonLongRegex)) {
+            return pokemonNameRegex.exec(this.species)[1];
         }
     }
 
