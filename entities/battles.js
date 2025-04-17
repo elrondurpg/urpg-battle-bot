@@ -5,7 +5,7 @@ export const GENERATIONS = [ "Standard"/*, "GSC", "RSE", "XY", "SM", "SwSh", "SV
 export const BATTLE_TYPES = [ "Singles"/*, "Doubles", "FFA "*/];
 export const SEND_TYPES = [ /*"Public",*/ "Private" ];
 export const TEAM_TYPES = [ /*"Open",*/ "Full", "Preview" ];
-export const STARTING_WEATHERS = [ "None", "Rain Dance", "Sunny Day", "Hail", "Sandstorm" ];
+export const STARTING_WEATHERS = [ "None", "Rain Dance", "Sunny Day", "Hail", "Snow", "Sandstorm"  ];
 export const STARTING_TERRAINS = [ "Building", "Cave", "Ice", "Puddles", "Sand/Badlands", "Tall Grass", "Snow", "Water", "Volcano", "Burial Grounds", "Soaring", "Space" ];
 
 export class Battle {

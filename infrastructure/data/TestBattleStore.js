@@ -11,9 +11,9 @@ export class TestBattleStore extends InMemoryBattleStore {
         let pokemon1 = new Pokemon();
         pokemon1.id = 1;
         pokemon1.nickname = undefined;
-        pokemon1.species = "parasect";
+        pokemon1.species = "Eiscue";
         pokemon1.gender = "M";
-        pokemon1.ability = "dryskin";
+        pokemon1.ability = "ice face";
         pokemon1.item = 'fightiniumz';
         pokemon1.teraType = "Fire";
         pokemon1.conversionType = "Ice";
@@ -47,7 +47,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         trainer1.activePokemon = 1;
         trainer1.position = 'p1';
         //trainer1.switch = 3;
-        trainer1.move = 'spore';
+        trainer1.move = 'hail';
         //trainer1.mega = true;
         //trainer1.terastallize = true
         //trainer1.max = true;
