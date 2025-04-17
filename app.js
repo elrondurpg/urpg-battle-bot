@@ -7,7 +7,7 @@ import {
   verifyKeyMiddleware,
 } from 'discord-interactions';
 import { getRoute } from './infrastructure/discord/interaction-router.js';
-import { fs } from 'fs';
+import * as fs from 'fs';
 
 // Create an express app
 const app = express();
