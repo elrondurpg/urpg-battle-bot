@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import { Server } from 'http';
+import * as http from 'http';
 import {
   InteractionResponseType,
   InteractionType,
@@ -8,6 +8,7 @@ import {
 } from 'discord-interactions';
 import { getRoute } from './infrastructure/discord/interaction-router.js';
 import * as fs from 'fs';
+import * as https from 'https';
 
 // Create an express app
 const app = express();
@@ -28,7 +29,7 @@ let serverHttpProtocol = process.env.SERVER_HTTP_PROTOCOL;
 const PORT = process.env.PORT || 3000;
 
 if (serverHttpProtocol === "http") {
-  const server = Server(app);
+  const server = http.Server(app);
   server.listen(PORT, () => {
     console.log('Listening for HTTP requests on port', PORT);
   });
@@ -48,7 +49,7 @@ else {
       minVersion: process.env.SERVER_MIN_TLS_VERSION || 'TLSv1.2'
     }
 
-    const server = require('https').Server(serverOptions, app);
+    const server = https.Server(serverOptions, app);
     server.listen(PORT, () => {
       console.log('Listening for HTTPS requests on port', PORT);
     });
