@@ -1,4 +1,5 @@
 import { BattleIdCollisionError } from "../../entities/battles.js";
+import * as Showdown from "urpg-battle-bot-calc";
 
 
 export class InMemoryBattleStore {
@@ -6,6 +7,10 @@ export class InMemoryBattleStore {
 
     get(id) {
         return this._battles.get(BigInt(id));
+    }
+
+    getAll() {
+        return this._battles;
     }
     
     create(battle) {
@@ -21,6 +26,13 @@ export class InMemoryBattleStore {
 
     save(battle) {
         return battle;
+    }
+
+    saveAll() {
+        let showdown = Showdown;
+        for (let [id, battle] of this._battles) {
+            console.log(battle);
+        }
     }
 
     delete(battle) {

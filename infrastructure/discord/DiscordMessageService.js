@@ -26,8 +26,8 @@ let lastItems = new Map();
 
 export class DiscordMessageService {
 
-    async sendMessage(message, options) {
-        let item = { message: message, threadId: options.threadId, type: 'create' };
+    async sendMessageWithOptions(message, options) {
+        let item = { message: message, threadId: options['discordThreadId'] };
         if (!firstItems.get(options.threadId)) {
             firstItems.set(options.threadId, item);
             lastItems.set(options.threadId, item);
@@ -44,11 +44,8 @@ export class DiscordMessageService {
     
 async function clearQueue(threadId) {
     try {
-        let response;
         let firstItem = firstItems.get(threadId);
-        if (firstItem.type == 'create') {
-            response = await sendTextMessage(firstItem.threadId, firstItem.message);
-        }
+        let response = await sendTextMessage(firstItem.threadId, firstItem.message);
         let headers = response.headers;
         let remaining = headers.get("X-RateLimit-Remaining");
         let resetAfter = headers.get("X-RateLimit-Reset-After");

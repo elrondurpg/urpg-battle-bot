@@ -32,7 +32,7 @@ async function sendPokemonInDiscord(req, res) {
         pokemon.teraType = getOptionValue(options, "tera-type");
         pokemon.conversionType = getOptionValue(options, "conversion-type");
 
-        let battle = BATTLE_SERVICE.addPokemon(battleId, userId, pokemon);
+        let battle = await BATTLE_SERVICE.addPokemon(battleId, userId, pokemon);
         await res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -45,9 +45,7 @@ async function sendPokemonInDiscord(req, res) {
             let streamOptions = {
                 threadId: req.body.channel.id
             };
-            let stream = createStream(battle, streamOptions);
-            stream.sendStart();
-            battle.stream = stream;
+            await createStream(battle, streamOptions);
         }
     } catch (err) {
         if (err instanceof BadRequestError) {

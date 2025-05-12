@@ -4,15 +4,15 @@ import { BATTLE_SERVICE } from "../../dependency-injection.js";
 import * as ValidationRules from '../../utils/ValidationRules.js';
 import { BadRequestError } from "../../utils/BadRequestError.js";
 
-export const switchPokemon = (req, res) => {
-    return switchDiscordPokemon(req, res);
+export const choosePokemonForLearnset = (req, res) => {
+    return choosePokemonForDiscordLearnset(req, res);
 }
 
-export const choosePokemon = (req, res) => {
-    return chooseDiscordPokemon(req, res);
+export const displayLearnset = (req, res) => {
+    return displayDiscordLearnset(req, res);
 }
 
-async function switchDiscordPokemon(req, res) {
+async function choosePokemonForDiscordLearnset(req, res) {
     const context = req.body.context;
     const userId = context === 0 ? req.body.member.user.id : req.body.user.id;
 
@@ -25,7 +25,7 @@ async function switchDiscordPokemon(req, res) {
     try {
         let battle = await BATTLE_SERVICE.get(battleId);
         if (battle) {
-            let pokemonById = battle.getNonActiveTrainerPokemonById(userId);
+            let pokemonById = battle.getTrainerPokemonById(userId);
             let options = [];
             for (let [key, value] of pokemonById) {
                 let option = {
@@ -38,7 +38,7 @@ async function switchDiscordPokemon(req, res) {
                 await res.send({
                     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                     data: {
-                        content: 'Which Pokémon will you switch in?',
+                        content: 'Which Pokémon\'s learnset would you like to display?',
                         flags: InteractionResponseFlags.EPHEMERAL,
                         components: [
                             {
@@ -46,7 +46,7 @@ async function switchDiscordPokemon(req, res) {
                             components: [
                                 {
                                     type: MessageComponentTypes.STRING_SELECT,
-                                    custom_id: `msg_switch_choice_${battleId}_${userId}`,
+                                    custom_id: `msg_learnset_choice_${battleId}_${userId}`,
                                     options: options,
                                 },
                             ],
@@ -56,12 +56,7 @@ async function switchDiscordPokemon(req, res) {
                 });
             }
             else {
-                if (battle.rules.numPokemonPerTrainer > 1) {
-                    throw new BadRequestError("You have no benched Pokémon with the will to fight!");
-                }
-                else {
-                    throw new BadRequestError("You have no benched Pokémon!");
-                }
+                throw new BadRequestError("You have no Pokémon in this battle!");
             }
         }
         else {
@@ -80,7 +75,7 @@ async function switchDiscordPokemon(req, res) {
     }
 }
 
-async function chooseDiscordPokemon(req, res) {
+async function displayDiscordLearnset(req, res) {
     const { data } = req.body;
 
     const channelName = req.body.channel.name;
@@ -88,22 +83,20 @@ async function chooseDiscordPokemon(req, res) {
         return getInvalidChannelMessage(res);
     }
 
-    const info = data.custom_id.replace('msg_switch_choice_', '');
+    const info = data.custom_id.replace('msg_learnset_choice_', '');
     const tokens = info.split("_");
     let battle = await BATTLE_SERVICE.get(tokens[0]);
     let trainerId = tokens[1];
     
     try {
-        await BATTLE_SERVICE.chooseSwitch(battle.id, trainerId, data.values[0]);
         res.send({
             type: InteractionResponseType.UPDATE_MESSAGE,
             data: {
                 flags: InteractionResponseFlags.EPHEMERAL,
-                content: `Switch set!`,
+                content: battle.displayPokemonLearnset(trainerId, data.values[0]),
                 components: []
             }
         });
-        await battle.stream.sendMove(trainerId);
     } catch (err) {
         if (err instanceof BadRequestError) {
             return res.send({

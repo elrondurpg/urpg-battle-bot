@@ -5,5 +5,5 @@ export function isDiscordId(input) {
 }
 
 export function isBattleThread(channelName) {
-    return channelName.substr(0, 12) !== BATTLE_THREAD_TAG
+    return channelName.substr(0, 12) === BATTLE_THREAD_TAG
 }

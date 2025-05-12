@@ -13,29 +13,34 @@ async function displayDiscordStats(req, res) {
     const userId = context === 0 ? req.body.member.user.id : req.body.user.id;
 
     const channelName = req.body.channel.name;
-    if (ValidationRules.isBattleThread(channelName)) {
+    if (!ValidationRules.isBattleThread(channelName)) {
         return getInvalidChannelMessage(res);
     }
 
     const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
     try {
-        let battle = BATTLE_SERVICE.get(battleId);
-        if (battle.trainers.has(userId)) {
-            if (battle.trainers.get(userId).pokemon.size > 0) {
-                return res.send({
-                    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                    data: {
-                        flags: InteractionResponseFlags.EPHEMERAL,
-                        content: battle.printTrainer(userId)
-                    }
-                });
+        let battle = await BATTLE_SERVICE.get(battleId);
+        if (battle) {
+            if (battle.trainers.has(userId)) {
+                if (battle.trainers.get(userId).pokemon.size > 0) {
+                    return res.send({
+                        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                        data: {
+                            flags: InteractionResponseFlags.EPHEMERAL,
+                            content: battle.printStatsFromTrainersPerspective(userId)
+                        }
+                    });
+                }
+                else {
+                    throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
+                }
             }
             else {
-                throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
+                throw new BadRequestError("You are not involved in this battle!");
             }
         }
         else {
-            throw new BadRequestError("You are not involved in this battle!");
+            throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
         }
     } catch (err) {
         if (err instanceof BadRequestError) {

@@ -15,30 +15,21 @@ async function joinDiscordBattle(req, res) {
 
     const channelName = req.body.channel.name;
     const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
-    if (ValidationRules.isBattleThread(channelName)) {
+    if (!ValidationRules.isBattleThread(channelName)) {
         return getInvalidChannelMessage(res);
     }
     try {
-        let battle = BATTLE_SERVICE.addPlayer(battleId, userId);
+        let name = req.body.member.nick;
+        if (name == undefined) {
+            name = req.body.member.user.global_name;
+        }
+        let battle = await BATTLE_SERVICE.addPlayerWithName(battleId, userId, name);
         if (battle.trainers.has(userId)) {
-            if (req.body.member.user.nick != undefined) {
-                battle.trainers.get(userId).name = req.body.member.nick;
-            }
-            else {
-                battle.trainers.get(userId).name = req.body.member.user.global_name;
-            }
             sendSuccessMessage(res, userId);
             let options = {
                 threadId: req.body.channel.id
             }
-            MESSAGE_SERVICE.sendMessage(getBattleStartMessage(battle), options);
-            battle.awaitingChoices = new Map();
-            for (let trainer of battle.trainers.values()) {
-                battle.awaitingChoices.set(trainer.id, {
-                    type: "send",
-                    quantity: battle.rules.numPokemonPerTrainer
-                });
-            }
+            MESSAGE_SERVICE.sendMessageWithOptions(getBattleStartMessage(battle), options);
         }
     } catch (err) {
         if (err instanceof BadRequestError) {
@@ -75,7 +66,7 @@ function sendSuccessMessage(res, userId) {
 function getBattleStartMessage(battle) {
     let message = "**Battle Start**\n\n";
 
-    message += `<@${battle.teams[0][0].id}> vs. <@${battle.teams[1][0].id}>\n\n`;
+    message += `<@${battle.teams[0][0]}> vs. <@${battle.teams[1][0]}>\n\n`;
 
     message += `**Each player must send ${battle.rules.numPokemonPerTrainer} Pokémon!**\n`;
     message += "Use \`/send\` to send a Pokémon. Your team will be hidden from your opponent";

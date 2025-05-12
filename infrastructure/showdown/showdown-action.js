@@ -1,7 +1,7 @@
-export const pokemonLongRegex = /p\d+[a-z]+: .+/;
-const pokemonOwnerRegex = /(p\d+)[a-z]+: .+/;
-const pokemonPositionRegex = /p\d+([a-z]+): .+/;
-const pokemonNameRegex = /p\d+[a-z]+: (.+)/;
+export const pokemonLongRegex = /p\d+[a-z]*: .+/;
+const pokemonOwnerRegex = /(p\d+)[a-z]*: .+/;
+const pokemonPositionRegex = /p\d+([a-z]*): .+/;
+const pokemonNameRegex = /p\d+[a-z]*: (.+)/;
 const hpRegex = /(\d+\/\d+)\s*.*/;
 const statusRegex = /\d+\/\d+\s*(.*)/;
 const trainerRegex = /p\d+: (.+)/;

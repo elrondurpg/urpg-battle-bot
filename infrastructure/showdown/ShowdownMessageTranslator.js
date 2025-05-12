@@ -11,7 +11,7 @@ export class ShowdownMessageTranslator {
     }
 
     handleMessage(command) {
-        //console.log(command);
+        console.log(command);
         if (command != undefined) {
             if (this.splitPlayer != undefined) {
                 this.splitCount++;
@@ -243,8 +243,6 @@ export class ShowdownMessageTranslator {
         let tokens = action.tokens;
         let trainer = this.battle.trainers.get(tokens[3]);
         trainer.position = tokens[2];
-        this.battle.trainersByPnum.set(tokens[2], trainer);
-
     }
 
     doMove(action) {
@@ -276,7 +274,7 @@ export class ShowdownMessageTranslator {
             .setDetails(tokens[3])
             .setHpStatus(tokens[4]);
 
-        let trainer = this.battle.trainersByPnum.get(action.getPokemonOwner());
+        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
 
         return new ActionMessageBuilder(tokens[1] == "switch" ? "switchIn" : "drag")
             .from(action)
@@ -821,7 +819,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.trainersByPnum.get(action.getPokemonOwner());
+        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
         this.battle.setHasMegaEvolved(action.getPokemonOwner());
 
         return new ActionMessageBuilder('megaGen6')
@@ -839,7 +837,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.trainersByPnum.get(action.getPokemonOwner());
+        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
         this.battle.setHasMegaEvolved(action.getPokemonOwner());
 
         return new ActionMessageBuilder('primal')
@@ -857,7 +855,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.trainersByPnum.get(action.getPokemonOwner());
+        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
         this.battle.setHasMegaEvolved(action.getPokemonOwner());
 
         return new ActionMessageBuilder('ultraburst')

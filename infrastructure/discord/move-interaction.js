@@ -4,7 +4,6 @@ import { BATTLE_THREAD_TAG } from "../../constants.js";
 import { BATTLE_SERVICE } from "../../dependency-injection.js";
 import * as ValidationRules from '../../utils/ValidationRules.js';
 import { BadRequestError } from "../../utils/BadRequestError.js";
-import { streams } from "../showdown/stream-manager.js";
 import { ChooseMoveRequest } from "../../domain/battles/ChooseMoveRequest.js";
 
 export const chooseMove = (req, res) => {
@@ -16,7 +15,7 @@ async function chooseDiscordMove(req, res) {
     const userId = context === 0 ? req.body.member.user.id : req.body.user.id;
 
     const channelName = req.body.channel.name;
-    if (ValidationRules.isBattleThread(channelName)) {
+    if (!ValidationRules.isBattleThread(channelName)) {
         return getInvalidChannelMessage(res);
     }
 
@@ -30,7 +29,7 @@ async function chooseDiscordMove(req, res) {
         request.shouldUltraBurst = getOptionValue(options, "ultra-burst");
         request.shouldTerastallize = getOptionValue(options, "terastallize");
         request.shouldZMove = getOptionValue(options, "z-move");
-        let battle = BATTLE_SERVICE.chooseMove(battleId, userId, request);
+        let battle = await BATTLE_SERVICE.chooseMove(battleId, userId, request);
         
         await res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -39,19 +38,7 @@ async function chooseDiscordMove(req, res) {
                 content: `Move set!`
             }
         });
-        let stream = streams.get(battle.id);
-        stream.sendMove(userId);
-        
-        /*let allMovesChosen = true;
-        for (let trainer of battle.trainers.values()) {
-            if (trainer.move == undefined && trainer.switch == undefined) {
-                allMovesChosen = false;
-            }
-        }
-        if (allMovesChosen) {
-            let stream = streams.get(battle.id);
-            stream.sendMoves();
-        }    */
+        await battle.stream.sendMove(userId);
     } catch (err) {
         if (err instanceof BadRequestError) {
             return res.send({

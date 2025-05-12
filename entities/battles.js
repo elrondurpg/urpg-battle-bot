@@ -9,6 +9,7 @@ export const STARTING_WEATHERS = [ "None", "Rain Dance", "Sunny Day", "Hail", "S
 export const STARTING_TERRAINS = [ "Building", "Cave", "Ice", "Puddles", "Sand/Badlands", "Tall Grass", "Snow", "Water", "Volcano", "Burial Grounds", "Soaring", "Space" ];
 
 export class Battle {
+    options = {};
     id;
     ownerId;
     teams = [];
@@ -16,7 +17,6 @@ export class Battle {
     started = false;
 
     trainers = new Map();
-    trainersByPnum = new Map();
     awaitingChoices = new Map();
 
     weather;
@@ -24,6 +24,25 @@ export class Battle {
     turnNumber;
 
     ended = false;
+    readyToStart = false;
+    lastAction;
+    archived = false;
+
+    resume() {
+
+    }
+
+    isWaitingForLeads() {
+        return Array.from(this.awaitingChoices.values()).some(choice => choice.type == "lead");
+    }
+
+    isWaitingForSends() {
+        return Array.from(this.awaitingChoices.values()).some(choice => choice.type == "send");
+    }
+
+    isWaitingForJoins() {
+        return this.getNumPlayersNeeded() > 0;
+    }
 
     getNumPlayersNeeded() {
         return this.rules.numTeams * this.rules.numTrainersPerTeam - this.trainers.size;
@@ -35,13 +54,82 @@ export class Battle {
         }
     }
 
+    displayPokemonLearnset(trainerId, pokemonId) {
+        let message = "";
+        let battle = this.getShowdownBattle();
+        let side = battle.sides.find(side => side.discordId == trainerId);
+        let pokemon = side.pokemon.find(pokemon => pokemon.id == pokemonId);
+        let currentSpecies = pokemon.species;
+        let currentBaseSpecies = currentSpecies.baseSpecies;
+        if (pokemon.name != pokemon.species && (currentBaseSpecies == undefined || pokemon.name != currentBaseSpecies)) {
+            message += `${pokemon.name} the `
+        }
+        message += `**${pokemon.species.name}'s Moves**\n`;
+        return message + "\`\`\`" + pokemon.moveSlots.map(slot => slot.move).sort().join(", ") + "\`\`\`\n";
+    }
+
+    getTeamPreviewMessage() {
+        let message = "";
+
+        let battle = this.getShowdownBattle();
+        for (let side of battle.sides) {
+            message += `**${side.name}'s Team**\n\`\`\``;
+            for (let pokemon of side.pokemon) {
+                let currentSpecies = pokemon.species;
+                let currentBaseSpecies = currentSpecies.baseSpecies;
+                let originalSpecies = pokemon.baseSpecies.name;
+                let isAltered = pokemon.species.name != pokemon.baseSpecies.name;
+                let isAlternateForm = currentBaseSpecies && currentBaseSpecies == originalSpecies;
+                if (pokemon.name != pokemon.species && (currentBaseSpecies == undefined || pokemon.name != currentBaseSpecies)) {
+                    message += `${pokemon.name} the `
+                }
+                message += `${pokemon.species.name}`;
+                message += `${isAltered && !isAlternateForm ? ` [base: ${pokemon.baseSpecies.name}]` : ''}`;
+                message += `${pokemon.gender ? " " + pokemon.gender : ""}\n`;
+            }
+            message += "\`\`\`";
+        }
+        return message;
+    }
+
     getTrainerActivePokemon(trainerId) {
         let battle = this.getShowdownBattle();
         let side = battle.sides.find(side => side.discordId == trainerId);
         return side.active[0];
     }
-
+    
     getTrainerPokemonById(trainerId) {
+        let battle = this.getShowdownBattle();
+        let side = battle.sides.find(side => side.discordId == trainerId);
+
+        let positionsByPokemonId = new Map();
+        for (let i = 0; i < side.pokemon.length; i++) {
+            let pokemon = side.pokemon[i];
+            positionsByPokemonId.set(pokemon.id, i+1);
+        }
+
+        let slots = new Map();
+        for (let pokemon of side.pokemon) {
+            let label = "";
+            let currentSpecies = pokemon.species;
+            let currentBaseSpecies = currentSpecies.baseSpecies;
+            let originalSpecies = pokemon.baseSpecies.name;
+            let isAltered = pokemon.species.name != pokemon.baseSpecies.name;
+            let isAlternateForm = currentBaseSpecies && currentBaseSpecies == originalSpecies;
+            if (pokemon.name != pokemon.species && (currentBaseSpecies == undefined || pokemon.name != currentBaseSpecies)) {
+                label += `${pokemon.name} the `
+            }
+            label += `${pokemon.species.name}`;
+            label += `${isAltered && !isAlternateForm ? ` [base: ${pokemon.baseSpecies.name}]` : ''}`;
+            label += `${pokemon.gender ? " " + pokemon.gender : ""}, `;
+            label += `${battle.dex.abilities.get(pokemon.ability.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}`;
+            label += `${pokemon.item ? ` @ ${battle.dex.items.get(pokemon.item.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}` : ""}`;
+            slots.set(positionsByPokemonId.get(pokemon.id), label);
+        }
+        return slots;
+    }
+
+    getNonActiveTrainerPokemonById(trainerId) {
         let battle = this.getShowdownBattle();
         let side = battle.sides.find(side => side.discordId == trainerId);
         let nonActivePokemon = side.pokemon.filter(pokemon => !pokemon.isActive && !pokemon.fainted);
@@ -69,125 +157,176 @@ export class Battle {
             label += `${isAltered && !isAlternateForm ? ` [base: ${pokemon.baseSpecies.name}]` : ''}`;
             label += `${pokemon.gender ? " " + pokemon.gender : ""}, `;
             label += `${battle.dex.abilities.get(pokemon.ability.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}`;
-            label += `${pokemon.item != undefined ? ` @ ${battle.dex.items.get(pokemon.item.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}` : ""}`;
+            label += `${pokemon.item ? ` @ ${battle.dex.items.get(pokemon.item.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}` : ""}`;
             slots.set(positionsByPokemonId.get(pokemon.id), label);
         }
         return slots;
     }
-    
-    printTrainer(trainerId) {
+
+    printStatsFromTrainersPerspective(trainerId) {
         let message = "";
         let battle = this.getShowdownBattle();
-        let side = battle.sides.find(side => side.discordId == trainerId);
-        let sortedPokemon = side.pokemon.sort((a, b) => {
-            if(a.isActive && !b.isActive) {
+        let sides = Array.from(battle.sides).sort((a, b) => {
+            if (a.discordId == trainerId) {
                 return -1;
             }
-            else if (b.isActive && !a.isActive) {
+            else if (b.discordId == trainerId) {
                 return 1;
             }
-            else return 0;
+            else return a.name < b.name ? -1 : 1;
         });
+        for (let side of sides) {
+            message += this.printSideFromTrainersPerspective(side, trainerId);
+        }
+        return message;
+    }
+    
+    printSideFromTrainersPerspective(side, trainerId) {
+        let message = `**${side.name}'s Team**\n\`\`\``;
+        let battle = this.getShowdownBattle();
+
+        let sortedPokemon = side.discordId == trainerId 
+            ? Array.from(side.pokemon).sort((a, b) => 
+                {
+                    if(a.isActive && !b.isActive) {
+                        return -1;
+                    }
+                    else if (b.isActive && !a.isActive) {
+                        return 1;
+                    }
+                    else return 0;
+                })
+            : side.pokemon;
         let firstActive = false;
         let firstBench = false;
         for (let pokemon of sortedPokemon) {
-            if (!firstActive && pokemon.isActive) {
-                firstActive = true;
-                message += "**\nActive Pokémon**\n";
-            }
-            else if (!firstBench && !pokemon.isActive) {
-                firstBench = true;
-                message += "**\nBenched Pokémon**\n";
-            }
-            message += `${pokemon.id}: `;
-            let currentSpecies = pokemon.species;
-            let currentBaseSpecies = currentSpecies.baseSpecies;
-            let originalSpecies = pokemon.baseSpecies.name;
-            let isAltered = pokemon.species.name != pokemon.baseSpecies.name;
-            let isAlternateForm = currentBaseSpecies && currentBaseSpecies == originalSpecies;
-            if (pokemon.name != pokemon.species && (currentBaseSpecies == undefined || pokemon.name != currentBaseSpecies)) {
-                message += `${pokemon.name} the `
-            }
-            message += `${pokemon.species.name}`;
-            message += `${isAltered && !isAlternateForm ? ` [base: ${pokemon.baseSpecies.name}]` : ''}`;
-            message += `${pokemon.gender ? " " + pokemon.gender : ""}, `;
-            message += `${battle.dex.abilities.get(pokemon.ability.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}`;
-            message += `${pokemon.item != undefined ? ` @ ${battle.dex.items.get(pokemon.item.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}` : ""}`;
-
-            let hpPercent = (pokemon.hp / pokemon.maxhp * 100).toFixed(2) + '%';
-            message += ` ${hpPercent}`;
-
-            let first = true;
-            let boostOrder = [ "atk", "def", "spa", "spd", "spe", "accuracy", "evasion" ];
-            let boosts = Array.from(Object.keys(pokemon.boosts).sort((a, b) => {
-                return boostOrder.indexOf(a) - boostOrder.indexOf(b);
-            }));
-            for (let stat of boosts) {
-                let boost = pokemon.boosts[stat];
-                if (boost != 0) {
-                    if (first) {
-                        message += " ";
-                        first = false;
+            if (side.discordId == trainerId) {
+                if (!firstActive && pokemon.isActive) {
+                    firstActive = true;
+                    message += "\nActive Pokémon\n";
+                    message += "--------------\n";
+                }
+                else if (!firstBench && !pokemon.isActive) {
+                    firstBench = true;
+                    if (side.discordId != trainerId) {
+                        message += "\n";
                     }
-                    let statName = Showdown.default.Dex.textCache.Default[stat].statName;
-                    if (boost > 0) {
-                        message += `[${statName}+${boost}]`;
+                    message += "Benched Pokémon\n";
+                    message += "---------------\n";
+                }
+            }
+            //message += `${pokemon.id}: `;
+            let teamType = battle.rules.teamType.toLowerCase()
+            let shouldDisplay = true;
+            if (side.discordId != trainerId && teamType != "preview") {
+                let shouldDisplayCurrentIllusion = pokemon.isActive && pokemon.illusion && !pokemon.illusionRevealed;
+                let shouldDisplayLastIllusion = !pokemon.isActive && !pokemon.revealed && pokemon.previouslySwitchedIn && !pokemon.illusionRevealed;
+                if (shouldDisplayCurrentIllusion) {
+                    pokemon = pokemon.illusion;
+                }
+                else if (shouldDisplayLastIllusion && pokemon.lastIllusion) {
+                    shouldDisplay = false;
+                }
+                else {
+                    shouldDisplay = pokemon.previouslySwitchedIn || pokemon.revealed;
+                } 
+            }
+            if (shouldDisplay) {
+                let currentSpecies = pokemon.species;
+                let currentBaseSpecies = currentSpecies.baseSpecies;
+                let originalSpecies = pokemon.baseSpecies.name;
+                let isAltered = pokemon.species.name != pokemon.baseSpecies.name;
+                let isAlternateForm = currentBaseSpecies && currentBaseSpecies == originalSpecies;
+                if (pokemon.name != pokemon.species && (currentBaseSpecies == undefined || pokemon.name != currentBaseSpecies)) {
+                    message += `${pokemon.name} the `
+                }
+                message += `${pokemon.species.name}`;
+                message += `${isAltered && !isAlternateForm ? ` [base: ${pokemon.baseSpecies.name}]` : ''}`;
+                message += `${pokemon.gender ? " " + pokemon.gender : ""}`;
+                if (side.discordId == trainerId) {
+                    message += `, ${battle.dex.abilities.get(pokemon.ability.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}`;
+                    message += `${pokemon.item != undefined ? ` @ ${battle.dex.items.get(pokemon.item.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}` : ""}`;
+    
+                    let hpPercent = (pokemon.hp / pokemon.maxhp * 100).toFixed(2) + '%';
+                    message += ` ${hpPercent}`;
+        
+                    let first = true;
+                    let boostOrder = [ "atk", "def", "spa", "spd", "spe", "accuracy", "evasion" ];
+                    let boosts = Array.from(Object.keys(pokemon.boosts).sort((a, b) => {
+                        return boostOrder.indexOf(a) - boostOrder.indexOf(b);
+                    }));
+                    for (let stat of boosts) {
+                        let boost = pokemon.boosts[stat];
+                        if (boost != 0) {
+                            if (first) {
+                                message += " ";
+                                first = false;
+                            }
+                            let statName = Showdown.default.Dex.textCache.Default[stat].statName;
+                            if (boost > 0) {
+                                message += `[${statName}+${boost}]`;
+                            }
+                            else {
+                                message += `[${statName}${boost}]`;
+                            }
+                        }
                     }
-                    else {
-                        message += `[${statName}${boost}]`;
+        
+                    if (pokemon.status) {
+                        if (first) {
+                            message += " ";
+                            first = false;
+                        }
+                        message += `[${pokemon.status.toUpperCase()}]`;
+                    }
+        
+                    for (let status of Object.keys(pokemon.volatiles)) {
+                        if (first) {
+                            message += " ";
+                            first = false;
+                        }
+                        let tag = status;
+                        let volatile = Showdown.default.Dex.textCache.Default[status];
+                        if (volatile) {
+                            let volatileName = volatile.volatileName;
+                            if (volatileName) {
+                                tag = volatileName;
+                            }
+                        }
+                        if (tag != "[silent]") {
+                            message += `[${tag}]`;
+                        }
+                    }
+        
+                    if (pokemon.terastallized) {
+                        if (first) {
+                            message += " ";
+                            first = false;
+                        }
+                        message += `[Tera: ${pokemon.terastallized}]`;
+                    }
+                    message += "\n";
+    
+                    if (pokemon.hpType) {
+                        message += `-> Hidden Power type: ${battle.dex.types.get(pokemon.hpType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}\n`;
+                    }
+                    if (pokemon.teraType) {
+                        message += `-> Tera type: ${battle.dex.types.get(pokemon.teraType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}\n`;
+                    }
+                    if (pokemon.conversionType) {
+                        message += `-> Conversion type: ${battle.dex.types.get(pokemon.conversionType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name}\n`;
+                    }
+                    if (pokemon.useGmaxForm) {
+                        message += `-> Gigantamax Form Enabled\n`;
                     }
                 }
+                message += "\n";
             }
-
-            if (pokemon.status) {
-                if (first) {
-                    message += " ";
-                    first = false;
-                }
-                message += `[${pokemon.status.toUpperCase()}]`;
-            }
-
-            for (let status of Object.keys(pokemon.volatiles)) {
-                if (first) {
-                    message += " ";
-                    first = false;
-                }
-                let tag = status;
-                let volatile = Showdown.default.Dex.textCache.Default[status];
-                if (volatile) {
-                    let volatileName = volatile.volatileName;
-                    if (volatileName) {
-                        tag = volatileName;
-                    }
-                }
-                if (tag != "[silent]") {
-                    message += `[${tag}]`;
-                }
-            }
-
-            if (pokemon.terastallized) {
-                if (first) {
-                    message += " ";
-                    first = false;
-                }
-                message += `[Tera: ${pokemon.terastallized}]`;
-            }
-            message += "\n";
-
-            if (pokemon.hpType) {
-                message += `---(HP TYPE: ${battle.dex.types.get(pokemon.hpType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name})\n`;
-            }
-            if (pokemon.teraType) {
-                message += `---(TERA TYPE: ${battle.dex.types.get(pokemon.teraType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name})\n`;
-            }
-            if (pokemon.conversionType) {
-                message += `---(CONVERSION TYPE: ${battle.dex.types.get(pokemon.conversionType.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()).name})\n`;
-            }
-            if (pokemon.useGmaxForm) {
-                message += `---(GMAX FORM ENABLED)\n`;
+            else {
+                message += "???\n";
             }
         }
-        return message;
+        return message + "\`\`\`";
     }
 
     tryDynamax(trainer) {

@@ -6,24 +6,28 @@ import * as Showdown from "urpg-battle-bot-calc";
 
 export class BattleService {
 
-    create(request) {
+    async create(request) {
         if (request.isValid()) {
-            return createBattle(request);
+            return await createBattle(request);
         }
     }
 
-    get(battleId) {
-        return BATTLE_DATA.get(battleId);
+    async get(battleId) {
+        return await BATTLE_DATA.get(battleId);
     }
 
-    endBattle(battleId) {
-        let battle = BATTLE_DATA.get(battleId);
+    async getAll() {
+        return await BATTLE_DATA.getAll();
+    }
+
+    async endBattle(battleId) {
+        let battle = await BATTLE_DATA.get(battleId);
         battle.ended = true;
-        BATTLE_DATA.delete(battle);
+        await BATTLE_DATA.delete(battle);
     }
     
-    addPlayer(battleId, trainerId) {
-        let battle = BATTLE_DATA.get(battleId);
+    async addPlayerWithName(battleId, trainerId, trainerName) {
+        let battle = await BATTLE_DATA.get(battleId);
 
         if (!battle) {
             throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
@@ -40,11 +44,12 @@ export class BattleService {
         if (battle.getNumPlayersNeeded() > 0 && !battle.trainers.has(trainerId)) {
             let trainer = new Trainer();
             trainer.id = trainerId;
+            trainer.name = trainerName;
             battle.trainers.set(trainerId, trainer);
 
             for (let team of battle.teams) {
                 if (team.length < battle.rules.numTrainersPerTeam) {
-                    team.push(trainer);
+                    team.push(trainer.id);
                     break;
                 }
             }
@@ -56,10 +61,25 @@ export class BattleService {
             throw new BadRequestError(`Couldn't add you to this battle. It's already full!`);
         }
 
-        return BATTLE_DATA.save(battle);
+        if (battle.getNumPlayersNeeded() == 0) {
+            battle.awaitingChoices = new Map();
+            for (let trainer of battle.trainers.values()) {
+                battle.awaitingChoices.set(trainer.id, {
+                    type: "send",
+                    quantity: battle.rules.numPokemonPerTrainer
+                });
+            }
+        }
+
+        battle.lastAction = process.hrtime.bigint();
+        return await BATTLE_DATA.save(battle);
     }
 
-    addPokemon(battleId, trainerId, pokemon) {
+    async save(battle) {
+        return await BATTLE_DATA.save(battle);
+    }
+
+    async addPokemon(battleId, trainerId, pokemon) {
         pokemon.species = pokemon.species.trim();
         pokemon.ability = pokemon.ability.trim();
         pokemon.gender = pokemon.gender.trim();
@@ -76,14 +96,14 @@ export class BattleService {
             pokemon.conversionType = pokemon.conversionType.trim();
         }
 
-        let battle = BATTLE_DATA.get(battleId);
+        let battle = await BATTLE_DATA.get(battleId);
 
         if (!battle) {
             throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
         }
 
         if (battle.ended) {
-            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+            throw new BadRequestError(`Couldn't add a Pokémon to this battle. It's already finished!`);
         }
         if (battle.trainers.has(trainerId)) {
             let trainer = battle.trainers.get(trainerId);
@@ -170,13 +190,74 @@ export class BattleService {
                     else {
                         throw new BadRequestError(`There is no type named ${teraTypeName}! (from: Tera Type)`);
                     }
+                    if (species.name.toLowerCase().startsWith("terapagos") && teraType.name.toLowerCase() != 'stellar') {
+                        throw new BadRequestError("Terapagos can only have Tera Type = Stellar!");
+                    }
+                    if (species.name.toLowerCase().startsWith("ogerpon")) {
+                        throw new BadRequestError("Ogerpon's Tera Type depends on its form and cannot be set now!");
+                    }
+                }
+                else if (species.name.toLowerCase().startsWith("terapagos")) {
+                    pokemon.teraType = "Stellar";
                 }
 
                 if (pokemon.conversionType) {
                     let conversionTypeName = pokemon.conversionType;
                     let conversionType = Showdown.default.Dex.types.get(conversionTypeName);
                     if (conversionType.exists) {
-                        pokemon.conversionType = conversionType.name;
+
+                        let tempSpecies = species;
+                        if (species.battleOnly != undefined) {
+                            tempSpecies = Showdown.default.Dex.species.get(species.battleOnly);
+                        }
+        
+                        let speciesName = tempSpecies.name.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase();
+                        let learnset = Showdown.default.Dex.dataCache.Learnsets[speciesName].learnset;
+                        let knownMoves = new Set();
+                        if (learnset != undefined) {
+                            knownMoves = [...knownMoves, ...Object.keys(learnset)];
+                        }
+                        if (tempSpecies.changesFrom != undefined) {
+                            let changesFromSpeciesName = tempSpecies.changesFrom.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase();
+                            let changesFromLearnset = Showdown.default.Dex.dataCache.Learnsets[changesFromSpeciesName].learnset;
+        
+                            if (changesFromLearnset != undefined) {
+                                knownMoves = [...knownMoves, ...Object.keys(changesFromLearnset)];
+        
+                                let changesFromSpecies = Showdown.default.Dex.species.get(changesFromSpeciesName);
+                                let currSpecies = changesFromSpecies;
+                                while (currSpecies.prevo) {
+                                    let prevo = Showdown.default.Dex.species.get(currSpecies.prevo);
+                                    let prevoName = prevo.name.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+                                    let prevoLearnset = Showdown.default.Dex.dataCache.Learnsets[prevoName].learnset;
+                                    if (prevoLearnset != undefined) {
+                                        knownMoves = [...knownMoves, ...Object.keys(changesFromLprevoLearnsetearnset)];
+                                    }
+                                    currSpecies = prevo;
+                                }
+                            }
+                        }
+                        else {
+                            let currSpecies = tempSpecies;
+                            while (currSpecies.prevo) {
+                                let prevo = Showdown.default.Dex.species.get(currSpecies.prevo);
+                                let prevoName = prevo.name.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+                                let prevoLearnset = Showdown.default.Dex.dataCache.Learnsets[prevoName].learnset;
+                                if (prevoLearnset != undefined) {
+                                    knownMoves = [...knownMoves, ...Object.keys(prevoLearnset)];
+                                }
+                                currSpecies = prevo;
+                            }
+                        }
+                        if (knownMoves.some(moveName => {
+                            let move = Showdown.default.Dex.dataCache.Moves[moveName];
+                            return move.type.toLowerCase() == pokemon.conversionType;
+                        })) {
+                            pokemon.conversionType = conversionType.name;
+                        }
+                        else {
+                            throw new BadRequestError(`${species.name} can't have Conversion Type = ${conversionType.name} because it doesn't learn a move of that type! (from: Conversion Type)`);
+                        }
                     }
                     else {
                         throw new BadRequestError(`There is no type named ${conversionTypeName}! (from: Conversion Type)`);
@@ -191,7 +272,8 @@ export class BattleService {
                 else {
                     battle.awaitingChoices.delete(trainer.id);
                 }
-                return battle;
+                battle.lastAction = process.hrtime.bigint();
+                return await BATTLE_DATA.save(battle);
             }
             else {
                 throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
@@ -202,15 +284,15 @@ export class BattleService {
         }
     }
 
-    chooseLead(battleId, trainerId, index) {
-        let battle = BATTLE_DATA.get(battleId);
+    async chooseLead(battleId, trainerId, index) {
+        let battle = await BATTLE_DATA.get(battleId);
 
         if (!battle) {
             throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
         }
 
         if (battle.ended) {
-            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+            throw new BadRequestError(`Couldn't send a Pokémon to this battle. It's already finished!`);
         }
         if (battle.trainers.has(trainerId)) {
             if (battle.awaitingChoices.has(trainerId) && battle.awaitingChoices.get(trainerId).type == "lead") {
@@ -218,7 +300,11 @@ export class BattleService {
                     let trainer = battle.trainers.get(trainerId);
                     trainer.activePokemon = index;
                     battle.awaitingChoices.delete(trainerId);
-                    return battle;
+                    if (battle.awaitingChoices.size == 0) {
+                        battle.readyToStart = true;
+                    }
+                    battle.lastAction = process.hrtime.bigint();
+                    return await BATTLE_DATA.save(battle);
                 }
                 else {
                     if (battle.rules.numPokemonPerTrainer == 1) {
@@ -238,15 +324,15 @@ export class BattleService {
         }
     }
 
-    chooseMove(battleId, trainerId, request) {
-        let battle = BATTLE_DATA.get(battleId);
+    async chooseMove(battleId, trainerId, request) {
+        let battle = await BATTLE_DATA.get(battleId);
 
         if (!battle) {
             throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
         }
 
         if (battle.ended) {
-            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+            throw new BadRequestError(`Couldn't send a move to this battle. It's already finished!`);
         }
         if (battle.trainers.has(trainerId)) {
             let trainer = battle.trainers.get(trainerId);
@@ -262,6 +348,7 @@ export class BattleService {
                     else {
                         trainer.move = moveName;
                         battle.awaitingChoices.delete(trainerId);
+                        battle.lastAction = process.hrtime.bigint();
                         return battle;
                     }
                 }
@@ -272,6 +359,7 @@ export class BattleService {
                     else {
                         trainer.move = moveName;
                         battle.awaitingChoices.delete(trainerId);
+                        battle.lastAction = process.hrtime.bigint();
                         return battle;
                     }
                 }
@@ -282,6 +370,7 @@ export class BattleService {
                     else {
                         trainer.move = moveName;
                         battle.awaitingChoices.delete(trainerId);
+                        battle.lastAction = process.hrtime.bigint();
                         return battle;
                     }
                 }
@@ -305,6 +394,7 @@ export class BattleService {
                     else {
                         trainer.move = moveName;
                         battle.awaitingChoices.delete(trainerId);
+                        battle.lastAction = process.hrtime.bigint();
                         return battle;
                     }
                 }
@@ -321,6 +411,7 @@ export class BattleService {
                     else {
                         trainer.move = moveName;
                         battle.awaitingChoices.delete(trainerId);
+                        battle.lastAction = process.hrtime.bigint();
                         return battle;
                     }
                 }
@@ -480,6 +571,7 @@ export class BattleService {
 
                 trainer.move = moveName;
                 battle.awaitingChoices.delete(trainerId);
+                battle.lastAction = process.hrtime.bigint();
                 return battle;
             }
             else {
@@ -491,15 +583,15 @@ export class BattleService {
         }
     }
 
-    chooseSwitch(battleId, trainerId, pokemonId) {
-        let battle = BATTLE_DATA.get(battleId);
+    async chooseSwitch(battleId, trainerId, pokemonId) {
+        let battle = await BATTLE_DATA.get(battleId);
 
         if (!battle) {
             throw new BadRequestError(`There's no battle happening in this thread. Any previous battle in this thread has finished!`);
         }
 
         if (battle.ended) {
-            throw new BadRequestError(`Couldn't add you to this battle. It's already finished!`);
+            throw new BadRequestError(`Couldn't send a command in this battle. It's already finished!`);
         }
         if (battle.trainers.has(trainerId)) {
             if (battle.awaitingChoices.has(trainerId) && (battle.awaitingChoices.get(trainerId).type == "move" || battle.awaitingChoices.get(trainerId).type == "switch")) {    
@@ -511,6 +603,7 @@ export class BattleService {
                 let trainer = battle.trainers.get(trainerId);
                 trainer.switch = pokemonId;
                 battle.awaitingChoices.delete(trainerId);
+                battle.lastAction = process.hrtime.bigint();
             }
             else {
                 throw new BadRequestError("Kauri's words echoed... There's a time and place for everything, but not now.");
@@ -524,7 +617,7 @@ export class BattleService {
 
 }
 
-function createBattle(request) {
+async function createBattle(request) {
     let battle = new Battle();
 
     battle.ownerId = request.ownerId;
@@ -567,13 +660,15 @@ function createBattle(request) {
     for (let i = 0; i < rules.numTeams; i++) {
         battle.teams.push([]);
     }
-    battle.teams[0].push(owner);
+    battle.teams[0].push(owner.id);
 
     rules.numPokemonPerTrainer = request.teamSize;
 
     battle.rules = rules;
 
-    return BATTLE_DATA.create(battle);
+    let result = await BATTLE_DATA.create(battle);
+    result.lastAction = process.hrtime.bigint();
+    return result;
 }
 
 function hasTrainerSentSpeciesAlready(trainer, species) {

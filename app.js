@@ -1,14 +1,13 @@
 import 'dotenv/config';
 import express from 'express';
-import * as http from 'http';
-import {
-  InteractionResponseType,
-  InteractionType,
-  verifyKeyMiddleware,
-} from 'discord-interactions';
-import { getRoute } from './infrastructure/discord/interaction-router.js';
 import * as fs from 'fs';
+import * as http from 'http';
 import * as https from 'https';
+import { InteractionResponseType, verifyKeyMiddleware } from 'discord-interactions';
+import { getRoute } from './infrastructure/discord/interaction-router.js';
+import { sendOpenBattlesHeartbeat } from './infrastructure/discord/open-battles-heartbeat.js';
+import { BATTLE_DATA } from './dependency-injection.js';
+import { sendArchiveBattlesHeartbeat } from './infrastructure/discord/archive-battles-heartbeat.js';
 
 // Create an express app
 const app = express();
@@ -55,3 +54,28 @@ else {
     });
   }
 }
+
+BATTLE_DATA.loadAll();
+
+
+setInterval(sendOpenBattlesHeartbeat, 900000);
+setInterval(sendArchiveBattlesHeartbeat, 43200000);
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received.');
+  await BATTLE_DATA.saveAll();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received.');
+  await BATTLE_DATA.saveAll();
+  process.exit(0);
+});
+
+process.on('SIGKILL', async () => {
+  console.log('SIGKILL signal received.');
+  await BATTLE_DATA.saveAll();
+  process.exit(0);
+});
+

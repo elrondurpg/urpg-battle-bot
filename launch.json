@@ -7,7 +7,8 @@
             "name": "Node: Nodemon",
             "processId": "${command:PickProcess}",
             "restart": true,
-            "protocol": "inspector"
+            "protocol": "inspector",
+            "killBehavior": "polite"
         }
     ]
 }

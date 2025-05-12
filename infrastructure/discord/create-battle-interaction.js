@@ -1,13 +1,14 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BattleIdCollisionError } from '../../entities/battles.js';
 import { createPublicThread } from './thread-service.js';
-import { BATTLE_SERVICE } from '../../dependency-injection.js';
+import { BATTLE_DATA, BATTLE_SERVICE } from '../../dependency-injection.js';
 import { CreateBattleRequest } from '../../domain/battles/CreateBattleRequest.js';
 import { BadRequestError } from '../../utils/BadRequestError.js';
 import { getOptionValue } from '../../commands.js';
 import { capitalize } from '../../utils.js';
 import { BATTLE_THREAD_TAG } from '../../constants.js';
 import { MESSAGE_SERVICE } from '../../dependency-injection.js';
+import { CONFIG_SERVICE } from '../../dependency-injection.js';
 
 export const onCreateBattle = (req, res) => {
     try {
@@ -20,8 +21,9 @@ export const onCreateBattle = (req, res) => {
 }
 
 async function createDiscordBattle(req, res) {
+    const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
-    if ("battle-search" != channelName) {
+    if (CONFIG_SERVICE.getBattleSearchChannelName() != channelName) {
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -45,7 +47,7 @@ async function createDiscordBattle(req, res) {
     request.itemsAllowed = getOptionValue(options, 'items-allowed');
 
     try {
-        let battle = BATTLE_SERVICE.create(request);
+        let battle = await BATTLE_SERVICE.create(request);
         if (req.body.member.user.nick != undefined) {
             battle.trainers.get(userId).name = req.body.member.nick;
         }
@@ -59,6 +61,9 @@ async function createDiscordBattle(req, res) {
             threadId: thread.id
         }
         await MESSAGE_SERVICE.sendMessage(getBattleThreadInitialMessageContent(battle), options);
+        battle.options['discordGuildId'] = guildId;
+        battle.options['discordThreadId'] = thread.id;
+        await BATTLE_DATA.save(battle);
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
