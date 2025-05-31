@@ -1,6 +1,4 @@
 import { BattleIdCollisionError } from "../../models/battle-room.js";
-import * as Showdown from "urpg-battle-bot-calc";
-
 
 export class InMemoryBattleStore {
     _battles = new Map();
@@ -29,7 +27,6 @@ export class InMemoryBattleStore {
     }
 
     saveAll() {
-        let showdown = Showdown;
         for (let [id, battle] of this._battles) {
             console.log(battle);
         }
