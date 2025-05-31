@@ -4,14 +4,14 @@ import { ActionMessageBuilder } from './action-message-builder.js';
 export class ShowdownMessageTranslator {
     splitPlayer;
     splitCount = 0;
-    battle;
+    stream;
     
-    constructor(battle) {
-        this.battle = battle;
+    constructor(stream) {
+        this.stream = stream;
     }
 
     handleMessage(command) {
-        console.log(command);
+        //console.log(command);
         if (command != undefined) {
             if (this.splitPlayer != undefined) {
                 this.splitCount++;
@@ -32,7 +32,6 @@ export class ShowdownMessageTranslator {
                         message = "N/A";
                         break;
                     case 'start': 
-                        this.battle.started = true;
                         message = `**Let the battle begin!**`;
                         break;
                     case 'move': 
@@ -241,7 +240,7 @@ export class ShowdownMessageTranslator {
 
     doPlayer(action) {
         let tokens = action.tokens;
-        let trainer = this.battle.trainers.get(tokens[3]);
+        let trainer = this.stream.battle.sides.find(trainer => trainer.discordId == tokens[3]);
         trainer.position = tokens[2];
     }
 
@@ -253,7 +252,6 @@ export class ShowdownMessageTranslator {
 
         let message = "";
         if (action.zeffect) {
-            this.battle.setHasUsedZMove(action.getPokemonOwner());
             message += new ActionMessageBuilder('zEffect')
                 .from(action)
                 .setPokemon(action.getPokemonName())
@@ -274,7 +272,7 @@ export class ShowdownMessageTranslator {
             .setDetails(tokens[3])
             .setHpStatus(tokens[4]);
 
-        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
+        let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
         return new ActionMessageBuilder(tokens[1] == "switch" ? "switchIn" : "drag")
             .from(action)
@@ -533,12 +531,11 @@ export class ShowdownMessageTranslator {
                 .setEffect(action.weather)
                 .build();
         }
-        else if (tokens.includes("none") && this.battle.weather) {
+        else if (tokens.includes("none") && tokens[3]) {
             let message = new ActionMessageBuilder("end")
                 .from(action)
-                .setEffect(this.battle.weather)
+                .setEffect(tokens[3])
                 .build();
-            this.battle.weather = undefined;
             return message;
         }
         else  {
@@ -552,7 +549,6 @@ export class ShowdownMessageTranslator {
                     .build();
                 message += "\n";
             }
-            this.battle.weather = action.weather;
             return message + new ActionMessageBuilder("start")
                 .from(action)
                 .setEffect(action.weather)
@@ -644,7 +640,6 @@ export class ShowdownMessageTranslator {
             }
         }
         else if (action.effect == 'Dynamax') {
-            this.battle.setHasDynamaxed(action.getPokemonOwner());
             if (tokens[4] == "Gmax") {
                 action.effect = "gigantamax";
             }
@@ -819,8 +814,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
-        this.battle.setHasMegaEvolved(action.getPokemonOwner());
+        let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
         return new ActionMessageBuilder('megaGen6')
             .from(action)
@@ -837,8 +831,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
-        this.battle.setHasMegaEvolved(action.getPokemonOwner());
+        let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
         return new ActionMessageBuilder('primal')
             .from(action)
@@ -855,8 +848,7 @@ export class ShowdownMessageTranslator {
             .setSpecies(tokens[3])
             .setItem(tokens[4]);
 
-        let trainer = this.battle.stream.getTrainerByPnum(action.getPokemonOwner())[1];
-        this.battle.setHasMegaEvolved(action.getPokemonOwner());
+        let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
         return new ActionMessageBuilder('ultraburst')
             .from(action)
@@ -870,8 +862,6 @@ export class ShowdownMessageTranslator {
     doZPower(action) {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
-        
-        this.battle.setHasUsedZMove(action.getPokemonOwner());
 
         return new ActionMessageBuilder('zPower')
             .from(action)
@@ -893,8 +883,6 @@ export class ShowdownMessageTranslator {
         let tokens = action.tokens;
         action.setPokemon(tokens[2])
             .setType(tokens[3]);
-        
-        this.battle.setHasTerastallized(action.getPokemonOwner());
 
         return new ActionMessageBuilder('terastallize')
             .from(action)

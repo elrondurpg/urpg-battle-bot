@@ -1,8 +1,7 @@
 import * as mysql from 'mysql';
-import { Battle, BattleRules } from '../../entities/battles.js';
-import { createStream } from '../showdown/stream-manager.js';
-import { Trainer } from '../../entities/trainer.js';
-import { MESSAGE_SERVICE } from '../../dependency-injection.js';
+import { BattleRoom, BattleRules } from '../../models/battle-room.js';
+import { TrainerRequest } from '../../models/trainer-request.js';
+import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE } from '../app/dependency-injection.js';
 
 const _GET_ALL_QUERY = "SELECT * FROM battles";
 const _GET_BY_ID_QUERY = "SELECT * FROM battles WHERE id = ?";
@@ -38,7 +37,7 @@ export class MySqlBattleStore {
                         if (results && results.size > 0) {
                             for (let result of results) {
                                 let wrapper = await parseBattleStringToJson(result);
-                                let battle = Object.assign(new Battle, wrapper);
+                                let battle = Object.assign(new BattleRoom, wrapper);
                                 await startBattle(battle);
                                 this._battles.set(BigInt(battle.id), battle);
                                 battle.archived = false;
@@ -62,7 +61,7 @@ export class MySqlBattleStore {
             else {
                 for (let result of results) {
                     let wrapper = await parseBattleStringToJson(result);
-                    let battle = Object.assign(new Battle, wrapper);
+                    let battle = Object.assign(new BattleRoom, wrapper);
                     if (!battle.archived) {
                         await startBattle(battle);
                         this._battles.set(BigInt(battle.id), battle);
@@ -94,7 +93,7 @@ export class MySqlBattleStore {
     }
 
     async archive(battle) {
-        MESSAGE_SERVICE.sendMessageWithOptions("**This battle has been archived due to inactivity.** Resume battle with any slash command.", battle.options);
+        BATTLES_MESSAGES_SERVICE.create(battle, "**This battle has been archived due to inactivity.** Resume battle with any slash command.");
         this._battles.delete(BigInt(battle.id));
         battle.archived = true;
         return this.save(battle);
@@ -138,78 +137,61 @@ async function parseBattleStringToJson(s) {
     return Object.assign(new BattleDataWrapper, data);
 }
 
-async function startBattle(battle) {
-    if (battle.trainers) {
-        for (let [id, trainer] of battle.trainers) {
-            battle.trainers.set(id, Object.assign(new Trainer, trainer));
+async function startBattle(room) {
+    if (room.trainers) {
+        for (let [id, trainer] of room.trainers) {
+            room.trainers.set(id, Object.assign(new TrainerRequest, trainer));
         }
     }
-    if (battle.inputLog) {
-        let streamOptions = {
-            inputLog: battle.inputLog
-        };
-        await createStream(battle, streamOptions);
+    if (room.options['inputLog']) {
+        await BATTLE_SERVICE.create(room);
     }
-    else if (battle.isWaitingForSends()) {
-        MESSAGE_SERVICE.sendMessageWithOptions("**The battle resumed!**", battle.options);
-        MESSAGE_SERVICE.sendMessageWithOptions(getWaitingForSendsMessage(battle), battle.options);
+    else if (room.getNumPlayersNeeded() == 0 && isWaitingForSends(room)) {
+        BATTLES_MESSAGES_SERVICE.create(room, "**The battle resumed!**");
+        BATTLES_MESSAGES_SERVICE.create(room, getWaitingForSendsMessage(room));
     }
-    battle.lastAction = process.hrtime.bigint();
+    room.lastActionTime = process.hrtime.bigint();
+}
+
+function isWaitingForSends(room) {
+    return Array.from(room.trainers.values()).some(trainer => trainer.pokemon.size < room.rules.numPokemonPerTrainer);
 }
 
 class BattleDataWrapper {
-    inputLog;
     options;
     id;
     ownerId;
     teams;
     rules;
-    started;
     trainers;
-    awaitingChoices;
-    weather;
-    turnNumber;
-    ended;
     archived;
 
-    constructor(battle) {
-        if (battle) {
-            if (battle.getShowdownBattle) {
-                let showdownBattle = battle.getShowdownBattle();
-                if (showdownBattle) {
-                    this.inputLog = showdownBattle.inputLog;
-                }
+    constructor(room) {
+        if (room) {
+            this.options = room.options;
+            let showdownBattle = BATTLE_SERVICE.get(room.id);
+            if (showdownBattle) {
+                this.options['inputLog'] = showdownBattle.inputLog;
             }
-            this.options = battle.options;
-            this.id = battle.id;
-            this.ownerId = battle.ownerId;
-            this.teams = battle.teams;
-            this.rules = battle.rules;
-            this.started = battle.started;
-            this.trainers = battle.trainers;
-            this.awaitingChoices = battle.awaitingChoices;
-            this.weather = battle.weather;
-            this.turnNumber = battle.turnNumber;
-            this.ended = battle.ended;
-            this.archived = battle.archived;
+            this.id = room.id;
+            this.ownerId = room.ownerId;
+            this.teams = room.teams;
+            this.rules = room.rules;
+            this.trainers = room.trainers;
+            this.archived = room.archived;
         }
     }
 
-    toBattle() {
-        let battle = new Battle();
-        battle.options = this.options;
-        battle.id = this.id;
-        battle.ownerId = this.ownerId;
-        battle.teams = this.teams;
-        battle.rules = Object.assign(new BattleRules, this.rules);
-        battle.started = this.started;
-        battle.trainers = this.trainers;
-        battle.awaitingChoices = this.awaitingChoices;
-        battle.weather = this.weather;
-        battle.turnNumber = this.turnNumber;
-        battle.ended = this.ended;
-        battle.archived = this.archived;
-        return battle;
+    toBattleRoom() {
+        let room = new BattleRoom();
+        room.options = this.options;
+        room.id = this.id;
+        room.ownerId = this.ownerId;
+        room.teams = this.teams;
+        room.rules = Object.assign(new BattleRules, this.rules);
+        room.trainers = this.trainers; 
+        room.archived = this.archived;
+        return room;
     }
 }
 

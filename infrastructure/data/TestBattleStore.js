@@ -1,8 +1,8 @@
-import { Pokemon } from "../../entities/pokemon.js";
-import { Trainer } from "../../entities/trainer.js";
-import { createStream } from "../showdown/stream-manager.js";
+import { PokemonRequest } from "../../models/pokemon-request.js";
+import { TrainerRequest } from "../../models/trainer-request.js";
 import { InMemoryBattleStore } from "./InMemoryBattleStore.js";
-import { Battle } from "../../entities/battles.js";
+import { BattleRoom } from "../../models/battle-room.js";
+import { BATTLE_SERVICE } from "../app/dependency-injection.js";
 
 export class TestBattleStore extends InMemoryBattleStore {
     constructor() {
@@ -10,18 +10,18 @@ export class TestBattleStore extends InMemoryBattleStore {
     }
 
     async loadAll() {
-        let pokemon1 = new Pokemon();
+        let pokemon1 = new PokemonRequest();
         pokemon1.id = 1;
         pokemon1.nickname = undefined;
-        pokemon1.species = "gengar";
+        pokemon1.species = "ninetales-alola";
         pokemon1.gender = "M";
-        pokemon1.ability = "levitate";
-        pokemon1.item = 'fightiniumz';
+        pokemon1.ability = "snowwarning";
+        pokemon1.item = 'firiumz';
         //pokemon1.teraType = "Fire";
         pokemon1.conversionType = "Ice";
         //pokemon1.hiddenPowerType = "Ground";
 
-        let pokemon2 = new Pokemon();
+        let pokemon2 = new PokemonRequest();
         pokemon2.id = 2;
         pokemon2.nickname = undefined;
         pokemon2.species = "roserade";
@@ -31,7 +31,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon2.item = 'leftovers';
         pokemon2.teraType = "grass";
 
-        let pokemon3 = new Pokemon();
+        let pokemon3 = new PokemonRequest();
         pokemon3.id = 3;
         pokemon3.nickname = "Churtle";
         pokemon3.species = "squirtle";
@@ -41,12 +41,11 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon3.item = 'leftovers';
         pokemon3.teraType = "water";
 
-        let trainer1 = new Trainer();
+        let trainer1 = new TrainerRequest();
         trainer1.id = process.env.TEST_TRAINER1,
         trainer1.name = 'Elrond';
         trainer1.pokemon = new Map().set(1, pokemon1).set(2, pokemon2).set(3, pokemon3);
         trainer1.pokemonIndex = 2;
-        trainer1.activePokemon = 1;
         trainer1.position = 'p1';
         //trainer1.switch = 3;
         trainer1.move = 'shadowball';
@@ -56,15 +55,15 @@ export class TestBattleStore extends InMemoryBattleStore {
         //trainer1.zmove = true;
         //trainer1.ultra = true;
 
-        let pokemon4 = new Pokemon();
+        let pokemon4 = new PokemonRequest();
         pokemon4.id = 1,
-        pokemon4.species = "electrode";
-        pokemon4.gender = "n";
-        pokemon4.ability = "static";
+        pokemon4.species = "torkoal";
+        pokemon4.gender = "m";
+        pokemon4.ability = "drought";
         pokemon4.hiddenPowerType = "ICE";
         pokemon4.item = 'Leftovers';
 
-        let pokemon5 = new Pokemon();
+        let pokemon5 = new PokemonRequest();
         pokemon5.id = 2,
         pokemon5.species = "pidove";
         pokemon5.gender = "M";
@@ -73,7 +72,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         //pokemon5.item = 'flyinggem';
 
 
-        let pokemon6 = new Pokemon();
+        let pokemon6 = new PokemonRequest();
         pokemon6.id = 3,
         pokemon6.species = "kakuna";
         pokemon6.gender = "M";
@@ -82,7 +81,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon6.item = 'leftovers';
 
 
-        let trainer2 = new Trainer();
+        let trainer2 = new TrainerRequest();
         trainer2.id = process.env.TEST_TRAINER2,
         trainer2.name = 'CPU1';
         trainer2.pokemon = new Map().set(1, pokemon4).set(2, pokemon5).set(3, pokemon6);
@@ -91,13 +90,14 @@ export class TestBattleStore extends InMemoryBattleStore {
         trainer2.position = 'p2';
         trainer2.move = "explosion";
 
-        let battle = new Battle();
-        battle.options = {
+        let room = new BattleRoom();
+        room.options = {
             'discordThreadId': process.env.TEST_BATTLE_THREAD_ID
         };
-        battle.id = 407835314107200n;
-        battle.ownerId = trainer1.id;
-        battle.teams = [ 
+        
+        room.id = 407835314107200n;
+        room.ownerId = trainer1.id;
+        room.teams = [ 
             [
                 trainer1.id
             ], 
@@ -105,18 +105,17 @@ export class TestBattleStore extends InMemoryBattleStore {
                 trainer2.id
             ] 
         ];
-        battle.started = false;
-        battle.trainers = new Map()
+        room.trainers = new Map()
             .set(trainer1.id, trainer1)
             .set(trainer2.id, trainer2);
-        battle.rules = {
+        room.rules = {
             generation: 'standard',
             battleType: 'singles',
             numTeams: 2,
             numTrainersPerTeam: 1,
             numPokemonPerTrainer: 3,
             sendType: 'private',
-            teamType: 'full',
+            teamType: 'preview',
             startingWeather: null,
             startingTerrain: null,
             ohkoClause: true,
@@ -125,7 +124,7 @@ export class TestBattleStore extends InMemoryBattleStore {
             sleepClause: true,
             freezeClause: true,
             speciesClause: true,
-            itemsAllowed: false,
+            itemsAllowed: true,
             itemClause: true,
             megasAllowed: true,
             zmovesAllowed: true,
@@ -140,21 +139,17 @@ export class TestBattleStore extends InMemoryBattleStore {
             wonderLauncherClause: false,
             rentalClause: true
         };
-        this._battles.set(battle.id, battle);
+        this._battles.set(room.id, room);
 
-        let streamOptions = {};
-        let stream = await createStream(battle, streamOptions);
-        battle.stream = stream;
-        await stream.sendLead(trainer1.id);
-        await stream.sendLead(trainer2.id);
-        await stream.sendMove(trainer1.id);
-        await stream.sendMove(trainer2.id);
+        await BATTLE_SERVICE.create(room);
+        await BATTLE_SERVICE.chooseLead(room.id, trainer1.id, 1);
+        await BATTLE_SERVICE.chooseLead(room.id, trainer2.id, 1);
+        await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');
+        await BATTLE_SERVICE.move(room.id, trainer2.id, 'doubleteam');
         let numLoops = 0;
         for (let i = 0; i < numLoops; i++) {
-            trainer1.move = "doubleteam";
-            trainer2.move = "toxic";
-            await stream.sendMove(trainer1.id);
-            await stream.sendMove(trainer2.id);
+            await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');
+            await BATTLE_SERVICE.move(room.id, trainer2.id, 'doubleteam');
         }
 
     }

@@ -1,0 +1,33 @@
+export class Pokemon {
+    id;
+    name;
+    isActive;
+    illusion;
+    illusionRevealed;
+    revealed;
+    previouslySwitchedIn;
+    lastIllusion;
+    species;
+    baseSpecies;
+    originalSpecies;
+    gender;
+    ability;
+    item;
+    hp;
+    maxhp;
+    boosts;
+    status;
+    volatiles;
+    terastallized;
+    hpType;
+    teraType;
+    conversionType;
+    useGmaxForm;
+    moves;
+    fainted;
+    volatiles;
+    lastMove;
+    canUltraBurst;
+    canMegaEvo;
+    trapped;
+}

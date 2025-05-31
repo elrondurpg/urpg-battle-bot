@@ -1,4 +1,4 @@
-import { BattleIdCollisionError } from "../../entities/battles.js";
+import { BattleIdCollisionError } from "../../models/battle-room.js";
 import * as Showdown from "urpg-battle-bot-calc";
 
 
