@@ -1,5 +1,5 @@
 import { BATTLE_ROOM_DATA, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
 export async function chooseSwitch(roomId, trainerId, pokemonId) {

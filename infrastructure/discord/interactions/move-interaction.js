@@ -1,9 +1,9 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
-import { getInvalidChannelMessage, getOptionValue } from "../utils.js";
+import { getInvalidChannelMessage, getOptionValue } from "../discord-utils.js";
 import { BATTLE_THREAD_TAG } from "../../../constants.js";
 import { BATTLE_ROOM_SERVICE } from '../../app/dependency-injection.js';
-import * as ValidationRules from '../../../utils/ValidationRules.js';
-import { BadRequestError } from "../../../utils/BadRequestError.js";
+import * as ValidationRules from '../../../utils/validation-rules.js';
+import { BadRequestError } from "../../../utils/bad-request-error.js";
 import { ChooseMoveRequest } from "../../../domain/battles/choose-move-request.js";
 
 export const chooseMove = (req, res) => {

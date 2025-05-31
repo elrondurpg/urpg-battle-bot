@@ -2,7 +2,7 @@ import { BATTLE_ROOM_SERVICE, CONFIG_SERVICE, DISCORD_GUILD_CHANNELS_SERVICE, DI
 import { capitalize, shorten } from "../../../utils.js";
 
 export function register() {
-    //setInterval(run, 900000);
+    setInterval(run, process.env.OPEN_BATTLE_TIMEOUT);
 }
 
 async function run() {
@@ -59,6 +59,6 @@ function getBattleMessage(battle) {
 }
 
 async function getBattleSearchChannel(guildId) {
-    let channels = DISCORD_GUILD_CHANNELS_SERVICE.read(guildId);
+    let channels = await DISCORD_GUILD_CHANNELS_SERVICE.read(guildId);
     return channels.find(channel => channel.name == CONFIG_SERVICE.getBattleSearchChannelName());
 }

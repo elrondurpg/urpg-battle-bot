@@ -4,7 +4,7 @@ import { ABILITY_SERVICE, ITEM_SERVICE, BATTLE_SERVICE, TYPE_SERVICE } from "../
 export function get(battleId, trainerId) {
     let stream = BATTLE_SERVICE.get(battleId);
     let battle = stream._stream.battle;
-    let side = battle.sides.find(side => side.discordId == trainerId);
+    let side = battle.sides.find(side => side.userId == trainerId);
     return side.pokemon.map(pokemon => buildResponse(pokemon));
 }
 

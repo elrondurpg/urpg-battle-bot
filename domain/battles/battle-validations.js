@@ -1,4 +1,4 @@
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 
 export function validateBattleRoom(room) {
     if (!room) {

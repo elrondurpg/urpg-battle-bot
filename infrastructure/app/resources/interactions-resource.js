@@ -1,5 +1,5 @@
 import { InteractionResponseType, verifyKeyMiddleware } from 'discord-interactions';
-import { getDiscordInteractionRoute } from '../../discord/router.js';
+import { getDiscordInteractionRoute } from '../../discord/discord-router.js';
 
 export function registerInteractionsResource(expressApp) {
     expressApp.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), handle);

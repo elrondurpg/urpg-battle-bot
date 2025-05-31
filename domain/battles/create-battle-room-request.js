@@ -1,5 +1,5 @@
 import { BATTLE_TYPES, SEND_TYPES, TEAM_TYPES, GENERATIONS } from "../../models/battle-room.js";
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 
 export const MIN_TEAM_SIZE = 1;
 export const MAX_TEAM_SIZE = 6;

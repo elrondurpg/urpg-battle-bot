@@ -1,12 +1,12 @@
 import { BATTLE_ROOM_DATA } from "../../infrastructure/app/dependency-injection.js";
 import { BattleRoom, BattleRules } from "../../models/battle-room.js";
-import { TrainerRequest } from "../../models/trainer-request.js";
+import { AddPlayerRequest } from "./add-player-request.js";
 
 export async function createBattleRoom(request) {
     let room = new BattleRoom();
 
     room.ownerId = request.ownerId;
-    let owner = new TrainerRequest();
+    let owner = new AddPlayerRequest();
     owner.id = room.ownerId;
     room.trainers.set(room.ownerId, owner);
 

@@ -1,8 +1,8 @@
-import { PokemonRequest } from "../../models/pokemon-request.js";
-import { TrainerRequest } from "../../models/trainer-request.js";
-import { InMemoryBattleStore } from "./InMemoryBattleStore.js";
+import { InMemoryBattleStore } from "./in-memory-battle-store.js";
 import { BattleRoom } from "../../models/battle-room.js";
 import { BATTLE_SERVICE } from "../app/dependency-injection.js";
+import { AddPokemonRequest } from "../../domain/battles/add-pokemon-request.js";
+import { AddPlayerRequest } from "../../domain/battles/add-player-request.js";
 
 export class TestBattleStore extends InMemoryBattleStore {
     constructor() {
@@ -10,18 +10,18 @@ export class TestBattleStore extends InMemoryBattleStore {
     }
 
     async loadAll() {
-        let pokemon1 = new PokemonRequest();
+        let pokemon1 = new AddPokemonRequest();
         pokemon1.id = 1;
         pokemon1.nickname = undefined;
-        pokemon1.species = "ninetales-alola";
+        pokemon1.species = "vileplume";
         pokemon1.gender = "M";
-        pokemon1.ability = "snowwarning";
+        pokemon1.ability = "chlorophyll";
         pokemon1.item = 'firiumz';
         //pokemon1.teraType = "Fire";
         pokemon1.conversionType = "Ice";
         //pokemon1.hiddenPowerType = "Ground";
 
-        let pokemon2 = new PokemonRequest();
+        let pokemon2 = new AddPokemonRequest();
         pokemon2.id = 2;
         pokemon2.nickname = undefined;
         pokemon2.species = "roserade";
@@ -31,7 +31,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon2.item = 'leftovers';
         pokemon2.teraType = "grass";
 
-        let pokemon3 = new PokemonRequest();
+        let pokemon3 = new AddPokemonRequest();
         pokemon3.id = 3;
         pokemon3.nickname = "Churtle";
         pokemon3.species = "squirtle";
@@ -41,12 +41,11 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon3.item = 'leftovers';
         pokemon3.teraType = "water";
 
-        let trainer1 = new TrainerRequest();
+        let trainer1 = new AddPlayerRequest();
         trainer1.id = process.env.TEST_TRAINER1,
         trainer1.name = 'Elrond';
         trainer1.pokemon = new Map().set(1, pokemon1).set(2, pokemon2).set(3, pokemon3);
         trainer1.pokemonIndex = 2;
-        trainer1.position = 'p1';
         //trainer1.switch = 3;
         trainer1.move = 'shadowball';
         //trainer1.mega = true;
@@ -55,15 +54,15 @@ export class TestBattleStore extends InMemoryBattleStore {
         //trainer1.zmove = true;
         //trainer1.ultra = true;
 
-        let pokemon4 = new PokemonRequest();
+        let pokemon4 = new AddPokemonRequest();
         pokemon4.id = 1,
-        pokemon4.species = "torkoal";
+        pokemon4.species = "dragonair";
         pokemon4.gender = "m";
-        pokemon4.ability = "drought";
+        pokemon4.ability = "shedskin";
         pokemon4.hiddenPowerType = "ICE";
         pokemon4.item = 'Leftovers';
 
-        let pokemon5 = new PokemonRequest();
+        let pokemon5 = new AddPokemonRequest();
         pokemon5.id = 2,
         pokemon5.species = "pidove";
         pokemon5.gender = "M";
@@ -72,7 +71,7 @@ export class TestBattleStore extends InMemoryBattleStore {
         //pokemon5.item = 'flyinggem';
 
 
-        let pokemon6 = new PokemonRequest();
+        let pokemon6 = new AddPokemonRequest();
         pokemon6.id = 3,
         pokemon6.species = "kakuna";
         pokemon6.gender = "M";
@@ -81,13 +80,11 @@ export class TestBattleStore extends InMemoryBattleStore {
         pokemon6.item = 'leftovers';
 
 
-        let trainer2 = new TrainerRequest();
+        let trainer2 = new AddPlayerRequest();
         trainer2.id = process.env.TEST_TRAINER2,
         trainer2.name = 'CPU1';
         trainer2.pokemon = new Map().set(1, pokemon4).set(2, pokemon5).set(3, pokemon6);
         trainer2.pokemonIndex = 2;
-        trainer2.activePokemon = 1;
-        trainer2.position = 'p2';
         trainer2.move = "explosion";
 
         let room = new BattleRoom();
@@ -144,8 +141,8 @@ export class TestBattleStore extends InMemoryBattleStore {
         await BATTLE_SERVICE.create(room);
         await BATTLE_SERVICE.chooseLead(room.id, trainer1.id, 1);
         await BATTLE_SERVICE.chooseLead(room.id, trainer2.id, 1);
-        await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');
-        await BATTLE_SERVICE.move(room.id, trainer2.id, 'doubleteam');
+        await BATTLE_SERVICE.move(room.id, trainer1.id, 'mimic');
+        await BATTLE_SERVICE.move(room.id, trainer2.id, 'surf');
         let numLoops = 0;
         for (let i = 0; i < numLoops; i++) {
             await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');

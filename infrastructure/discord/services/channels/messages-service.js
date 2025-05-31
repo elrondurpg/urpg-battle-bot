@@ -1,4 +1,4 @@
-import * as DISCORD from "../../rest-gateway.js";
+import * as DISCORD from "../../discord-gateway.js";
 
 const firstItems = new Map();
 const lastItems = new Map();

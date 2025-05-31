@@ -1,4 +1,4 @@
-import * as DISCORD from "../../rest-gateway.js";
+import * as DISCORD from "../../discord-gateway.js";
 
 export async function read(guildId) {
     const channelsEndpoint = `/guilds/${guildId}/channels`;

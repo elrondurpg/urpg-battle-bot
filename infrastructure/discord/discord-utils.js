@@ -1,4 +1,4 @@
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 import { BATTLE_SERVICE } from "../app/dependency-injection.js";
 
 export function getOptionValue(options, name) {

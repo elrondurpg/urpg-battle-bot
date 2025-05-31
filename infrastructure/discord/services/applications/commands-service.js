@@ -1,4 +1,4 @@
-import * as DISCORD from "../../rest-gateway.js";
+import * as DISCORD from "../../discord-gateway.js";
 export async function update(appId, commands) {
     const endpoint = `applications/${appId}/commands`;
 

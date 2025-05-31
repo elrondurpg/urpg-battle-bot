@@ -1,22 +1,19 @@
 import Sim from 'urpg-battle-bot-calc';
-import { BattlePacker } from './BattlePacker.js';
 import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE } from '../app/dependency-injection.js';
-import { ShowdownMessageTranslator } from './ShowdownMessageTranslator.js';
+import { FlavorTextUtility } from './utils/showdown-message-processor.js';
 import * as Showdown from "urpg-battle-bot-calc";
 
-export class BattleBotStream {
-    _battle;
+export class ShowdownStreamWrapper {
+    _room;
     _stream;
     splitPlayer;
     splitCount = 0;
-    packer;
-    translator;
+    flavorTextUtil;
 
-    constructor(battle) {
-        this._battle = battle;
+    constructor(room) {
+        this._room = room;
         this._stream = new Sim.BattleStream();
-        this.packer = new BattlePacker(battle);
-        this.translator = new ShowdownMessageTranslator(this._stream);
+        this.flavorTextUtil = new FlavorTextUtility(this._stream);
     }
 
     write(s) {
@@ -42,11 +39,11 @@ export class BattleBotStream {
                     message = await this.doWin(tokens);
                 }
                 else {
-                    message = this.translator.handleMessage(line);
+                    message = this.flavorTextUtil.handleMessage(line);
                 }
                 if (message && !tokens.includes("[silent]")) {
                     //console.log(message);
-                    await BATTLES_MESSAGES_SERVICE.create(this._battle, message);
+                    await BATTLES_MESSAGES_SERVICE.create(this._room, message);
                 }
             }
             if (!this._stream) {
@@ -63,51 +60,36 @@ export class BattleBotStream {
             this._stream.write(line);
         }
         this._stream.write(">unmute");
-        await BATTLES_MESSAGES_SERVICE.create(this._battle, "**The battle resumed!**");
+        await BATTLES_MESSAGES_SERVICE.create(this._room, "**The battle resumed!**");
 
         let showdownBattle = this._stream.battle;
 
         if (showdownBattle.turn > 0) {
-            await BATTLES_MESSAGES_SERVICE.create(this._battle, this.doTurn(showdownBattle.turn));
+            await BATTLES_MESSAGES_SERVICE.create(this._room, this.doTurn(showdownBattle.turn));
         }
         for (let request of showdownBattle.getRequests(showdownBattle.requestState)) {
             let message = this.doRequest(request);
-            await BATTLES_MESSAGES_SERVICE.create(this._battle, message);
+            await BATTLES_MESSAGES_SERVICE.create(this._room, message);
         }
     }
 
     async start() {       
-        let trainer1 = this._battle.trainers.get(this._battle.teams[0][0]);
-        trainer1.position = 'p1';
-        let packedTeam1 = this.packer.getPackedTeam(trainer1.id);
+        let trainer1 = this._room.trainers.get(this._room.teams[0][0]);
+        let packedTeam1 = this._room.getPackedTeam(trainer1.id);
         
-        let trainer2 = this._battle.trainers.get(this._battle.teams[1][0]);
-        trainer2.position = 'p2';
-        let packedTeam2 = this.packer.getPackedTeam(trainer2.id);
+        let trainer2 = this._room.trainers.get(this._room.teams[1][0]);
+        let packedTeam2 = this._room.getPackedTeam(trainer2.id);
 
         (async () => this.waitForInput())();
     
-        this._stream.write(`>start {"formatid":"[Gen 9] Custom Game", "rules":${JSON.stringify(this._battle.rules)}}`);
+        this._stream.write(`>start {"formatid":"[Gen 9] Custom Game", "rules":${JSON.stringify(this._room.rules)}}`);
         if (trainer1.name == trainer2.name) {
             trainer2.name = trainer2.name + " B";
-            BATTLES_MESSAGES_SERVICE.create(this._battle, `<@${trainer2.id}> will be referred to as ${trainer2.name} in this battle.`);
+            BATTLES_MESSAGES_SERVICE.create(this._room, `<@${trainer2.id}> will be referred to as ${trainer2.name} in this battle.`);
         }
-        this._stream.write(`>player p1 {"name":"${trainer1.name}", "discordId":"${trainer1.id}", "team":"${packedTeam1}"}`);
-        this._stream.write(`>player p2 {"name":"${trainer2.name}", "discordId":"${trainer2.id}", "team":"${packedTeam2}"}`);
-        await BATTLE_ROOM_DATA.save(this._battle);
-    }
-
-    getTrainerFromPositionSpecifier(position) {
-        const regex = /(p\d+)/;
-        let pnum = regex.exec(position)[1];
-        let trainerEntry = Array.from(this._battle.trainers).find(entry => entry[1].position == pnum);
-        if (trainerEntry) {
-            return trainerEntry[1];
-        }
-    }
-
-    getTrainerByPnum(position) {
-        return Array.from(this._battle.trainers).find(entry => entry[1].position == position);
+        this._stream.write(`>player p1 {"name":"${trainer1.name}", "userId":"${trainer1.id}", "team":"${packedTeam1}"}`);
+        this._stream.write(`>player p2 {"name":"${trainer2.name}", "userId":"${trainer2.id}", "team":"${packedTeam2}"}`);
+        await BATTLE_ROOM_DATA.save(this._room);
     }
 
     updatePokemonHp(pokemon, details) {
@@ -131,7 +113,7 @@ export class BattleBotStream {
 
     getTeamPreviewMessage() {
         let message = "\n";
-        let teamType = this._battle.rules.teamType.toLowerCase();
+        let teamType = this._room.rules.teamType.toLowerCase();
         if (teamType == "preview") {
             for (let side of this._stream.battle.sides) {
                 message += `**${side.name}'s Team**\n\`\`\``;
@@ -162,23 +144,23 @@ export class BattleBotStream {
     }
 
     doRequest(request) {
-        let trainer = this.getTrainerFromPositionSpecifier(request.side.id);
+        let trainer = this._stream.battle.sides.find(trainer => trainer.id == request.side.id);
         if (trainer) {
             if (request.active) {
-                let message = `**<@${trainer.id}>: Select your action for turn ${this._stream.battle.turn}!**\n`;
+                let message = `**<@${trainer.userId}>: Select your action for turn ${this._stream.battle.turn}!**\n`;
                 message += "Use `/move` to choose a move.\n";
                 message += "Use `/switch` to switch Pokémon.\n";
                 message += "Use `/help` to view other available commands.\n";
                 return message;
             }
             else if (request.forceSwitch && request.forceSwitch[0]) {
-                let message = `**<@${trainer.id}>: Choose which Pokémon to switch in!**\n`;
+                let message = `**<@${trainer.userId}>: Choose which Pokémon to switch in!**\n`;
                 message += "Use `/switch` to submit your choice.\n";
                 message += "Use `/help` to view other available commands.\n";
                 return message;
             }
             else if (request.teamPreview) {
-                let message = `**<@${trainer.id}>: Choose your lead Pokémon!**\n`;
+                let message = `**<@${trainer.userId}>: Choose your lead Pokémon!**\n`;
                 message += "Use `/lead` to submit your choice.\n";
                 message += "Use `/help` to view other available commands.\n";
                 return message;
@@ -358,7 +340,7 @@ export class BattleBotStream {
 
         // Output
 
-        await BATTLE_ROOM_SERVICE.endBattle(this._battle.id);
+        await BATTLE_ROOM_SERVICE.endBattle(this._room.id);
         this._stream = undefined;
 
         return message;

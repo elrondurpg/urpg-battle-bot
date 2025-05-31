@@ -1,7 +1,7 @@
 import * as mysql from 'mysql';
 import { BattleRoom, BattleRules } from '../../models/battle-room.js';
-import { TrainerRequest } from '../../models/trainer-request.js';
 import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE } from '../app/dependency-injection.js';
+import { AddPlayerRequest } from '../../domain/battles/add-player-request.js';
 
 const _GET_ALL_QUERY = "SELECT * FROM battles";
 const _GET_BY_ID_QUERY = "SELECT * FROM battles WHERE id = ?";
@@ -140,7 +140,7 @@ async function parseBattleStringToJson(s) {
 async function startBattle(room) {
     if (room.trainers) {
         for (let [id, trainer] of room.trainers) {
-            room.trainers.set(id, Object.assign(new TrainerRequest, trainer));
+            room.trainers.set(id, Object.assign(new AddPlayerRequest, trainer));
         }
     }
     if (room.options['inputLog']) {
@@ -210,26 +210,6 @@ function toJSON(battle) {
             return v;
         }
     });
-}
-function getWaitingForJoinsMessage(battle) {
-    let message = "";
-
-    let numPlayersNeeded = battle.getNumPlayersNeeded();
-    if (numPlayersNeeded == 1) {
-        message += `\n\n**Looking for ${battle.getNumPlayersNeeded()} opponent!**\n`;
-    }
-    else if (numPlayersNeeded > 1) {
-        message += `\n\n**Looking for ${battle.getNumPlayersNeeded()} opponents!**\n`;
-    }
-    if (numPlayersNeeded > 0) {
-        message += "Use the \`/join\` command to join this battle.";
-    }
-
-    return message;
-}
-    
-function getWaitingForLeadsMessage(battle) {
-
 }
 
 function getWaitingForSendsMessage(battle) {

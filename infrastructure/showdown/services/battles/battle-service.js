@@ -1,8 +1,8 @@
 import { Battle } from "../../../../models/battle.js";
 import { Trainer } from "../../../../models/trainer.js";
-import { BadRequestError } from "../../../../utils/BadRequestError.js";
+import { BadRequestError } from "../../../../utils/bad-request-error.js";
 import { BATTLES_POKEMON_SERVICE } from "../../../app/dependency-injection.js";
-import { BattleBotStream } from "../../stream.js";
+import { ShowdownStreamWrapper } from "../../showdown-stream-wrapper.js";
 
 const _streams = new Map();
 
@@ -19,7 +19,7 @@ export async function create(room) {
         throw new BadRequestError("A battle with that ID is already in progress!");
     }
 
-    let stream = new BattleBotStream(room);
+    let stream = new ShowdownStreamWrapper(room);
     _streams.set(room.id.toString(), stream);
 
     if (room.options['inputLog']) {
@@ -30,35 +30,36 @@ export async function create(room) {
     }
 }
 
-export async function chooseLead(battleId, trainerDiscordId, team) {
+export async function chooseLead(battleId, userId, team) {
     let stream = _streams.get(battleId.toString());
-    let trainer = stream._stream.battle.sides.find(side => side.discordId == trainerDiscordId);
+    let trainer = stream._stream.battle.sides.find(side => side.userId == userId);
     if (stream) {
         stream.write(`>${trainer.id} team ${team}`);
     }
 }
 
-export async function move(battleId, trainerDiscordId, move, modifier = "") {
+export async function move(battleId, userId, move, modifier = "") {
     let stream = _streams.get(battleId.toString());
-    let trainer = stream._stream.battle.sides.find(side => side.discordId == trainerDiscordId);
+    let trainer = stream._stream.battle.sides.find(side => side.userId == userId);
     if (stream) {
-        stream.write(`>${trainer.position} move ${move} ${modifier}`);
+        stream.write(`>${trainer.id} move ${move} ${modifier}`);
+    }
+    return buildResponse(stream._stream.battle);
+}
+
+export async function switchPokemon(battleId, userId, pokemonId) {
+    let stream = _streams.get(battleId.toString());
+    let trainer = stream._stream.battle.sides.find(side => side.userId == userId);
+    if (stream) {
+        stream.write(`>${trainer.id} switch ${pokemonId}`);
     }
 }
 
-export async function switchPokemon(battleId, trainerDiscordId, pokemonId) {
+export async function forfeit(battleId, userId) {
     let stream = _streams.get(battleId.toString());
-    let trainer = stream._stream.battle.sides.find(side => side.discordId == trainerDiscordId);
+    let trainer = stream._stream.battle.sides.find(side => side.userId == userId);
     if (stream) {
-        stream.write(`>${trainer.position} switch ${pokemonId}`);
-    }
-}
-
-export async function forfeit(battleId, trainerDiscordId) {
-    let stream = _streams.get(battleId.toString());
-    let trainer = stream._stream.battle.sides.find(side => side.discordId == trainerDiscordId);
-    if (stream) {
-        stream.write(`>forcelose ${trainer.position}`);
+        stream.write(`>forcelose ${trainer.id}`);
         return true;
     }
 }
@@ -72,7 +73,7 @@ function buildResponse(battle) {
 
 function buildTrainer(side) {
     let trainer = new Trainer();
-    trainer.id = side.discordId;
+    trainer.id = side.userId;
     trainer.pokemon = side.pokemon.map(pokemon => BATTLES_POKEMON_SERVICE.build(pokemon));
     trainer.active = trainer.pokemon.filter(pokemon => pokemon.isActive);
     trainer.zMoveUsed = side.zMoveUsed;

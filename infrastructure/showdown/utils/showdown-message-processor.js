@@ -1,7 +1,7 @@
-import { pokemonLongRegex, ShowdownAction } from './showdown-action.js';
-import { ActionMessageBuilder } from './action-message-builder.js';
+import { pokemonLongRegex, ShowdownMessage } from '../models/showdown-message.js';
+import { ActionMessageBuilder } from './flavor-text-builder.js';
 
-export class ShowdownMessageTranslator {
+export class FlavorTextUtility {
     splitPlayer;
     splitCount = 0;
     stream;
@@ -11,7 +11,7 @@ export class ShowdownMessageTranslator {
     }
 
     handleMessage(command) {
-        //console.log(command);
+        console.log(command);
         if (command != undefined) {
             if (this.splitPlayer != undefined) {
                 this.splitCount++;
@@ -25,12 +25,8 @@ export class ShowdownMessageTranslator {
                 message = "N/A";
             }
             else if (tokens.length > 1) {
-                let action = new ShowdownAction(tokens);
+                let action = new ShowdownMessage(tokens);
                 switch(tokens[1]) {
-                    case 'player':
-                        this.doPlayer(action);
-                        message = "N/A";
-                        break;
                     case 'start': 
                         message = `**Let the battle begin!**`;
                         break;
@@ -209,6 +205,7 @@ export class ShowdownMessageTranslator {
                     case 'upkeep':
                     case '-anim':
                     case 'replace':
+                    case 'player':
                     case 'debug':
                         message = "N/A";
                 }
@@ -236,12 +233,6 @@ export class ShowdownMessageTranslator {
                 return `Unimplemented command: ${command}`;
             }
         }
-    }
-
-    doPlayer(action) {
-        let tokens = action.tokens;
-        let trainer = this.stream.battle.sides.find(trainer => trainer.discordId == tokens[3]);
-        trainer.position = tokens[2];
     }
 
     doMove(action) {

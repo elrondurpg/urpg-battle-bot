@@ -2,8 +2,8 @@ import { InteractionResponseType, InteractionResponseFlags } from 'discord-inter
 import { BattleIdCollisionError } from '../../../models/battle-room.js';
 import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE, CONFIG_SERVICE, DISCORD_CHANNELS_THREADS_SERVICE } from '../../app/dependency-injection.js';
 import { CreateBattleRoomRequest } from '../../../domain/battles/create-battle-room-request.js';
-import { BadRequestError } from '../../../utils/BadRequestError.js';
-import { getOptionValue } from '../utils.js';
+import { BadRequestError } from '../../../utils/bad-request-error.js';
+import { getOptionValue } from '../discord-utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
 
 export const onCreateBattleRoom = (req, res) => {

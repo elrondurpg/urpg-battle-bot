@@ -1,9 +1,9 @@
 import { Move } from "../../../../models/move.js";
 import * as Showdown from "urpg-battle-bot-calc";
-import { BadRequestError } from "../../../../utils/BadRequestError.js";
+import { BadRequestError } from "../../../../utils/bad-request-error.js";
 
 export function get(name) {
-    const move = Showdown.default.Dex.dataCache.Moves[name];
+    const move = Showdown.default.Dex.dataCache.Moves[name.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()];
     if (name && (!move || (move.isNonstandard && move.isNonstandard != 'Past'))) {
         throw new BadRequestError(`There is no move named ${move ? move.name : name}!`);
     }

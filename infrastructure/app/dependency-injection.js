@@ -1,5 +1,5 @@
-import { MySqlBattleStore } from "../data/MySqlBattleStore.js";
-import { TestBattleStore } from "../data/TestBattleStore.js";
+import { MySqlBattleStore } from "../data/mysql-battle-store.js";
+import { TestBattleStore } from "../data/test-battle-store.js";
 import * as config from "../../config.js";
 import { BattleRoomService } from "../../domain/battles/battle-room-service.js";
 export const BATTLE_ROOM_DATA = getBattleStore();

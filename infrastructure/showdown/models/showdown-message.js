@@ -6,7 +6,7 @@ const hpRegex = /(\d+\/\d+)\s*.*/;
 const statusRegex = /\d+\/\d+\s*(.*)/;
 const trainerRegex = /p\d+: (.+)/;
 
-export class ShowdownAction {
+export class ShowdownMessage {
     tokens;
     ability;
     amount;

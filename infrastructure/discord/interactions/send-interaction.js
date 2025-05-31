@@ -1,9 +1,9 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
-import { getInvalidChannelMessage, getOptionValue } from '../utils.js';
+import { getInvalidChannelMessage, getOptionValue } from '../discord-utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
 import { BATTLE_ROOM_SERVICE } from '../../app/dependency-injection.js';
-import { PokemonRequest } from '../../../models/pokemon-request.js';
-import { BadRequestError } from '../../../utils/BadRequestError.js';
+import { BadRequestError } from '../../../utils/bad-request-error.js';
+import { AddPokemonRequest } from '../../../domain/battles/add-pokemon-request.js';
 
 export const sendPokemon = (req, res) => {
     return sendPokemonInDiscord(req, res)
@@ -22,7 +22,7 @@ async function sendPokemonInDiscord(req, res) {
     try {
         let options = req.body.data.options;
 
-        let pokemon = new PokemonRequest();
+        let pokemon = new AddPokemonRequest();
         pokemon.species = getOptionValue(options, "species");
         pokemon.gender = getOptionValue(options, "gender");
         pokemon.ability = getOptionValue(options, "ability");

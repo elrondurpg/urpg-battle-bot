@@ -1,5 +1,5 @@
 import { BATTLE_ROOM_DATA, MOVE_SERVICE, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
 export async function chooseMove(roomId, trainerId, request) {
@@ -13,19 +13,22 @@ export async function chooseMove(roomId, trainerId, request) {
     let pokemon = trainer.active[0];
     let moveName = request.move.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase();
 
-    failIfMustRecharge(request, pokemon, moveName);
-    
-    const move = MOVE_SERVICE.get(moveName);
-    failIfMustStruggle(pokemon, move);
-    failIfSendingAnotherMoveWhileUsingTwoTurnMove(pokemon, move);
-    failIfEncorePreventsMove(pokemon, move);
-    failIfViolateOhkoClause(room, move);
-    failIfMoveNotKnown(trainer, moveName);
-    failIfTauntPreventsMove(pokemon, request, move);
-    failIfTormentPreventsMove(pokemon, move, request);
-    failIfMoveDisabled(pokemon, move);
-    failIfViolateChoiceItem(pokemon, move);    
-    failIfZMoveSentDirectly(move);
+    if (pokemon.volatiles.mustrecharge) {
+        failIfMustRecharge(request, pokemon, moveName);
+    }
+    else {
+        const move = MOVE_SERVICE.get(moveName);
+        failIfMustStruggle(pokemon, move);
+        failIfSendingAnotherMoveWhileUsingTwoTurnMove(pokemon, move);
+        failIfEncorePreventsMove(pokemon, move);
+        failIfViolateOhkoClause(room, move);
+        failIfMoveNotKnown(trainer, moveName);
+        failIfTauntPreventsMove(pokemon, request, move);
+        failIfTormentPreventsMove(pokemon, move, request);
+        failIfMoveDisabled(pokemon, move);
+        failIfViolateChoiceItem(pokemon, move);    
+        failIfZMoveSentDirectly(move);
+    }
     failIfMoreThanOneModifierSelected(request);
     if (request.shouldDynamax) {
         failIfCantDynamax(room, trainer, pokemon);
@@ -115,27 +118,27 @@ function failIfViolateChoiceItem(pokemon, move) {
     if (pokemon.volatiles.choicelock) {
         if (move.id != pokemon.volatiles.choicelock.move && move.id != 'struggle') {
             let requiredMove = MOVE_SERVICE.get(pokemon.volatiles.choicelock.move);
-            throw new BadRequestError(`**${pokemon.species}'s choices are restricted by its item!**\nUse \`/move ${requiredMove.name}\` this turn.`);
+            throw new BadRequestError(`**${pokemon.species}'s choices are restricted by its item!**\nUse ${requiredMove.name} this turn.`);
         }
     }
 }
 
 function failIfMoveDisabled(pokemon, move) {
     if (pokemon.volatiles.disable && move.id == pokemon.volatiles.disable.move) {
-        throw new BadRequestError(`**${pokemon.species}'s ${move.name} is disabled!**\nUse \`/move\` to choose another move.`);
+        throw new BadRequestError(`**${pokemon.species}'s ${move.name} is disabled!**\nUse another move this turn.`);
     }
 }
 
 function failIfTormentPreventsMove(pokemon, move, request) {
     if (pokemon.volatiles.torment && pokemon.lastMove && move.id == pokemon.lastMove.id && !pokemon.lastMove.isZ == !request.shouldZMove) {
-        throw new BadRequestError(`**${pokemon.species} can't use ${move.name} after the Torment!**\nUse \`/move\` to choose another move.`);
+        throw new BadRequestError(`**${pokemon.species} can't use ${move.name} after the Torment!**\nUse another move this turn.`);
     }
 }
 
 function failIfTauntPreventsMove(pokemon, request, move) {
     if (pokemon.volatiles.taunt) {
         if (!request.shouldZMove && move.category === 'Status' && move.id !== 'mefirst') {
-            throw new BadRequestError(`**${pokemon.species} can't use ${move.name} after the Taunt!**\nUse \`/move\` to choose another move.`);
+            throw new BadRequestError(`**${pokemon.species} can't use ${move.name} after the Taunt!**\nUse another move this turn.`);
         }
     }
 }
@@ -161,7 +164,7 @@ function failIfEncorePreventsMove(pokemon, move) {
     if (pokemon.volatiles.encore) {
         if (move.id != pokemon.volatiles.encore.move && move.id != 'struggle') {
             let requiredMove = MOVE_SERVICE.get(pokemon.volatiles.encore.move);
-            throw new BadRequestError(`**${pokemon.species} must do an encore!**\nUse \`/move ${requiredMove.name}\` this turn.`);
+            throw new BadRequestError(`**${pokemon.species} must do an encore!**\nUse ${requiredMove.name} this turn.`);
         }
     }
 }
@@ -170,23 +173,23 @@ function failIfSendingAnotherMoveWhileUsingTwoTurnMove(pokemon, move) {
     if (pokemon.volatiles.twoturnmove) {
         if (move.id != pokemon.volatiles.twoturnmove.move) {
             let requiredMove = MOVE_SERVICE.get(pokemon.volatiles.twoturnmove.move);
-            throw new BadRequestError(`**${pokemon.species} is using a two-turn move!**\nUse \`/move ${requiredMove.name}\` this turn.`);
+            throw new BadRequestError(`**${pokemon.species} is using a two-turn move!**\nUse ${requiredMove.name} this turn.`);
         }
     }
 }
 
 function failIfMustRecharge(request, pokemon, moveName) {
     if (pokemon.volatiles.mustrecharge && moveName != "recharge") {
-        throw new BadRequestError(`**${pokemon.species} is recharging!**\nUse \`/move recharge\` this turn.`);
+        throw new BadRequestError(`**${pokemon.species} is recharging!**\nUse Recharge this turn.`);
     }
     if (request.shouldDynamax || request.shouldMegaEvolve || request.shouldTerastallize || request.shouldUltraBurst || request.shouldZMove) {
-        throw new BadRequestError(`**${pokemon.species} is recharging!**\nUse \`/move recharge\` without any modifiers this turn.`)
+        throw new BadRequestError(`**${pokemon.species} is recharging!**\nUse Recharge without any modifiers this turn.`)
     }
 }
 
 function failIfMustStruggle(pokemon, move) {
     if (pokemon.moves.length == 0 && move.id != "struggle") {
-        throw new BadRequestError(`**${pokemon.species} has no moves left!**\nUse \`/move struggle\` this turn.`);
+        throw new BadRequestError(`**${pokemon.species} has no moves left!**\nUse Struggle this turn.`);
     }
 }
 

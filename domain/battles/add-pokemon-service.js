@@ -1,5 +1,5 @@
 import { ABILITY_SERVICE, BATTLE_ROOM_DATA, ITEM_SERVICE, MOVE_SERVICE, SPECIES_SERVICE, TYPE_SERVICE, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
 const BATTLE_ONLY_FORMS = [ "Mega", "Gmax", "Mega-X", "Mega-Y", "Rainy", "Snowy", "Primal",

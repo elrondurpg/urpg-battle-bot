@@ -1,8 +1,8 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
-import * as ValidationRules from '../../../utils/ValidationRules.js';
+import * as ValidationRules from '../../../utils/validation-rules.js';
 import { BATTLE_ROOM_SERVICE, CONFIG_SERVICE } from '../../app/dependency-injection.js';
 import { BATTLE_THREAD_TAG } from "../../../constants.js";
-import { getInvalidChannelMessage } from "../utils.js";
+import { getInvalidChannelMessage } from "../discord-utils.js";
 
 export const displayHelp = (req, res) => {
     return displayDiscordHelp(req, res);

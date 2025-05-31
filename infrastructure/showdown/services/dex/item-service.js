@@ -1,6 +1,6 @@
 import { Item } from "../../../../models/item.js";
 import * as Showdown from "urpg-battle-bot-calc";
-import { BadRequestError } from "../../../../utils/BadRequestError.js";
+import { BadRequestError } from "../../../../utils/bad-request-error.js";
 
 export function get(name) {
     const item = Showdown.default.Dex.items.get(name.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase());  

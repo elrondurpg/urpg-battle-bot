@@ -1,7 +1,7 @@
 import { BATTLE_ROOM_DATA } from "../../infrastructure/app/dependency-injection.js";
-import { TrainerRequest } from "../../models/trainer-request.js";
-import { BadRequestError } from "../../utils/BadRequestError.js";
+import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
+import { AddPlayerRequest } from "./add-player-request.js";
 
 export async function addPlayer(battleId, trainerId, trainerName) {
     let room = await BATTLE_ROOM_DATA.get(battleId);
@@ -9,7 +9,7 @@ export async function addPlayer(battleId, trainerId, trainerName) {
     BATTLE_VALIDATOR.validateBattleRoomDoesntHaveTrainer(room, trainerId);
 
     if (room.getNumPlayersNeeded() > 0 && !room.trainers.has(trainerId)) {
-        let trainer = new TrainerRequest();
+        let trainer = new AddPlayerRequest();
         trainer.id = trainerId;
         trainer.name = trainerName;
         room.trainers.set(trainerId, trainer);
