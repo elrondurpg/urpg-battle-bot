@@ -1,37 +1,26 @@
 import 'dotenv/config';
 import express from 'express';
-import {
-  InteractionResponseType,
-  InteractionType,
-  verifyKeyMiddleware,
-} from 'discord-interactions';
-import { getRoute } from './infrastructure/interactions/interaction-router.js'
+import { initializeServer } from './infrastructure/app/server.js';
+import { registerJobs } from './infrastructure/app/jobs.js';
+import { registerResources } from './infrastructure/app/resources.js';
+import { registerSignals } from './infrastructure/app/signals.js';
+import { BATTLE_ROOM_DATA } from './infrastructure/app/dependency-injection.js';
 
-// Create an express app
 const app = express();
-// Get port, or default to 3000
-const PORT = process.env.PORT || 3000;
-app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async function (req, res) {
-  const { id, type, data } = req.body;
 
-  let handle = getRoute(req);
-  if (handle) {
-    return await handle(req, res);
-  }
-  else {
-    return res.send({ type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE });
-  }
+// enable the app to take HTTP or HTTPS requests based on values in .env
+initializeServer(app);
 
-  /**
-   * Handle verification requests
-   */
-  if (type === InteractionType.PING) {
-    return res.send({ type: InteractionResponseType.PONG });
-  }
+// register REST resources through which the application accepts requests
+// most of the application's interesting code flows through here
+registerResources(app);
 
-  // do something with unknown interactions
-});
+// resume any battles that were in progress when the app went down
+BATTLE_ROOM_DATA.loadAll();
 
-app.listen(PORT, () => {
-  console.log('Listening on port', PORT);
-});
+// set up jobs that run at defined intervals
+registerJobs();
+
+// enable app to respond gracefully to signals such as process termination
+registerSignals();
+
