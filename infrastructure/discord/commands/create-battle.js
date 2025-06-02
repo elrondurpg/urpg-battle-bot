@@ -4,8 +4,8 @@ export const createBattleCommand = {
     name: 'create-battle',
     description: 'Create a battle thread',
     type: 1,
-    integration_types: [0, 1],
-    contexts: [0, 1, 2],
+    integration_types: [0],
+    contexts: [0],
     options: [
       {
         type: 4,
