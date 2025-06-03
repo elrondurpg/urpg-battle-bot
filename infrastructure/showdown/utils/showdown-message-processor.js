@@ -1,5 +1,5 @@
 import { pokemonLongRegex, ShowdownMessage } from '../models/showdown-message.js';
-import { ActionMessageBuilder } from './flavor-text-builder.js';
+import { FlavorTextBuilder } from './flavor-text-builder.js';
 
 export class FlavorTextUtility {
     splitPlayer;
@@ -11,7 +11,7 @@ export class FlavorTextUtility {
     }
 
     handleMessage(command) {
-        console.log(command);
+        //console.log(command);
         if (command != undefined) {
             if (this.splitPlayer != undefined) {
                 this.splitCount++;
@@ -243,13 +243,13 @@ export class FlavorTextUtility {
 
         let message = "";
         if (action.zeffect) {
-            message += new ActionMessageBuilder('zEffect')
+            message += new FlavorTextBuilder('zEffect')
                 .from(action)
                 .setPokemon(action.getPokemonName())
                 .build() + "\n";
         }
 
-        return message + new ActionMessageBuilder('move')
+        return message + new FlavorTextBuilder('move')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setMove(action.move)
@@ -265,7 +265,7 @@ export class FlavorTextUtility {
 
         let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
-        return new ActionMessageBuilder(tokens[1] == "switch" ? "switchIn" : "drag")
+        return new FlavorTextBuilder(tokens[1] == "switch" ? "switchIn" : "drag")
             .from(action)
             .setTrainer(trainer.name)
             .setPokemon(action.getPokemonName())
@@ -289,7 +289,7 @@ export class FlavorTextUtility {
             speciesName = speciesName.replace(/\-Mega.*/, "");
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSpecies(speciesName)
@@ -302,7 +302,7 @@ export class FlavorTextUtility {
             .setReason(tokens[3])
             .setMove(tokens[4]);
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.reason)
@@ -314,7 +314,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -325,7 +325,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setEffect(tokens[3]);
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -340,7 +340,7 @@ export class FlavorTextUtility {
             .setAttacker(tokens[5])
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
            .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -354,7 +354,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setTarget(tokens[3]);
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getTargetName())
             .setSource(action.pokemon)
@@ -368,7 +368,7 @@ export class FlavorTextUtility {
             .setEffect(tokens.find(token => token.includes("[from] ")))
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -385,7 +385,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setStatus(tokens[3]);
 
-        return new ActionMessageBuilder('start')
+        return new FlavorTextBuilder('start')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.status)
@@ -397,7 +397,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setStatus(tokens[3]);
 
-        return new ActionMessageBuilder('end')
+        return new FlavorTextBuilder('end')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.status)
@@ -419,7 +419,7 @@ export class FlavorTextUtility {
             actionName += "FromItem";
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .setItem(action.item)
@@ -435,7 +435,7 @@ export class FlavorTextUtility {
             .setMove(tokens.find(token => token.includes("[from] move: ")))
             .setAbility(tokens.find(token => token.includes("[from] ability: ")));
 
-        return new ActionMessageBuilder('boost')
+        return new FlavorTextBuilder('boost')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect([action.move, action.ability].find(effect => effect != undefined))
@@ -449,7 +449,7 @@ export class FlavorTextUtility {
             .setTarget(tokens[3])
             .setStats(tokens[4]);
 
-        return new ActionMessageBuilder('swapBoost')
+        return new FlavorTextBuilder('swapBoost')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -459,7 +459,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('invertBoost')
+        return new FlavorTextBuilder('invertBoost')
             .setPokemon(action.getPokemonName())
             .build();
     }
@@ -470,7 +470,7 @@ export class FlavorTextUtility {
             .setEffect(tokens.find(token => token.includes("[from] ")))
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder('clearBoost')
+        return new FlavorTextBuilder('clearBoost')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -479,7 +479,7 @@ export class FlavorTextUtility {
     }
 
     doClearAllBoost(tokens) {
-        return new ActionMessageBuilder('clearAllBoost')
+        return new FlavorTextBuilder('clearAllBoost')
             .build();
     }
 
@@ -489,7 +489,7 @@ export class FlavorTextUtility {
             .setEffect(tokens.find(token => token.includes("[from] ")))
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder('clearBoost')
+        return new FlavorTextBuilder('clearBoost')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -502,7 +502,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setTarget(tokens[3]);
 
-        return new ActionMessageBuilder('copyBoost')
+        return new FlavorTextBuilder('copyBoost')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setTarget(action.getTargetName())
@@ -517,13 +517,13 @@ export class FlavorTextUtility {
 
         let ability;
         if (tokens.includes("[upkeep]")) {
-            return new ActionMessageBuilder("upkeep")
+            return new FlavorTextBuilder("upkeep")
                 .from(action)
                 .setEffect(action.weather)
                 .build();
         }
         else if (tokens.includes("none") && tokens[3]) {
-            let message = new ActionMessageBuilder("end")
+            let message = new FlavorTextBuilder("end")
                 .from(action)
                 .setEffect(tokens[3])
                 .build();
@@ -533,14 +533,14 @@ export class FlavorTextUtility {
             let message = "";
             if (action.effect && action.effect.includes("ability: ")) {
                 ability = action.effect;
-                message += new ActionMessageBuilder("abilityActivation")
+                message += new FlavorTextBuilder("abilityActivation")
                     .from(action)
                     .setPokemon(action.getSourceName())
                     .setAbility(action.effect)
                     .build();
                 message += "\n";
             }
-            return message + new ActionMessageBuilder("start")
+            return message + new FlavorTextBuilder("start")
                 .from(action)
                 .setEffect(action.weather)
                 .setAbility(ability)
@@ -558,7 +558,7 @@ export class FlavorTextUtility {
             action.condition = action.effect;
         }
 
-        return new ActionMessageBuilder("start")
+        return new FlavorTextBuilder("start")
             .from(action)
             .setEffect(action.condition)
             .setPokemon(action.getSourceName())
@@ -570,7 +570,7 @@ export class FlavorTextUtility {
         action.setCondition(tokens[2])
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder("end")
+        return new FlavorTextBuilder("end")
             .from(action)
             .setEffect(action.condition)
             .setSource(action.source)
@@ -582,7 +582,7 @@ export class FlavorTextUtility {
         action.setSide(tokens[2])
             .setCondition(tokens[3]);
 
-        return new ActionMessageBuilder("start")
+        return new FlavorTextBuilder("start")
             .from(action)
             .setEffect(action.condition)
             .setTrainer(action.getSide())
@@ -596,7 +596,7 @@ export class FlavorTextUtility {
             .setEffect(tokens.find(token => token.includes("[from] ")))
             .setSource(tokens.find(token => token.includes("[of] ")));
 
-        return new ActionMessageBuilder("end")
+        return new FlavorTextBuilder("end")
             .from(action)
             .setEffect(action.condition)
             .setTrainer(action.getSide())
@@ -636,7 +636,7 @@ export class FlavorTextUtility {
             }
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -650,7 +650,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setEffect(tokens[3]);
 
-        return new ActionMessageBuilder(tokens[1])
+        return new FlavorTextBuilder(tokens[1])
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.effect)
@@ -661,7 +661,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('crit')
+        return new FlavorTextBuilder('crit')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -671,7 +671,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('superEffective')
+        return new FlavorTextBuilder('superEffective')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -681,7 +681,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('resisted')
+        return new FlavorTextBuilder('resisted')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -691,7 +691,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('immune')
+        return new FlavorTextBuilder('immune')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -708,7 +708,7 @@ export class FlavorTextUtility {
             action.source = action.pokemon;
         }
 
-        return new ActionMessageBuilder("activate")
+        return new FlavorTextBuilder("activate")
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSource(action.getSourceName())
@@ -729,7 +729,7 @@ export class FlavorTextUtility {
             action.source = action.pokemon;
         }
 
-        return new ActionMessageBuilder("activate")
+        return new FlavorTextBuilder("activate")
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSource(action.getSourceName())
@@ -754,7 +754,7 @@ export class FlavorTextUtility {
             actionName = "changeAbility";
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(effect)
@@ -778,7 +778,7 @@ export class FlavorTextUtility {
             actionName = "start";
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(effect)
@@ -791,7 +791,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setSpecies(tokens[3]);
 
-        return new ActionMessageBuilder('transform')
+        return new FlavorTextBuilder('transform')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSpecies(action.getSpeciesName())
@@ -807,7 +807,7 @@ export class FlavorTextUtility {
 
         let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
-        return new ActionMessageBuilder('megaGen6')
+        return new FlavorTextBuilder('megaGen6')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSpecies(action.getSpeciesName())
@@ -824,7 +824,7 @@ export class FlavorTextUtility {
 
         let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
-        return new ActionMessageBuilder('primal')
+        return new FlavorTextBuilder('primal')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSpecies(action.getSpeciesName())
@@ -841,7 +841,7 @@ export class FlavorTextUtility {
 
         let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
-        return new ActionMessageBuilder('ultraburst')
+        return new FlavorTextBuilder('ultraburst')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setSpecies(action.getSpeciesName())
@@ -854,7 +854,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('zPower')
+        return new FlavorTextBuilder('zPower')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -864,7 +864,7 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
 
-        return new ActionMessageBuilder('zBroken')
+        return new FlavorTextBuilder('zBroken')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -875,7 +875,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2])
             .setType(tokens[3]);
 
-        return new ActionMessageBuilder('terastallize')
+        return new FlavorTextBuilder('terastallize')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setType(action.type)
@@ -900,7 +900,7 @@ export class FlavorTextUtility {
             actionName = 'start';
         }
 
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setEffect(action.effect)
             .setPokemon(action.getPokemonName())
@@ -915,7 +915,7 @@ export class FlavorTextUtility {
             .setMove(tokens[3])
             .setTarget(tokens[4]);
 
-        return new ActionMessageBuilder('prepare')
+        return new FlavorTextBuilder('prepare')
             .from(action)
             .setPokemon(action.getPokemonName())
             .setEffect(action.move)
@@ -926,7 +926,7 @@ export class FlavorTextUtility {
     doMustRecharge(action) {
         let tokens = action.tokens;
         action.setPokemon(tokens[2]);
-        return new ActionMessageBuilder('recharge')
+        return new FlavorTextBuilder('recharge')
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();
@@ -937,7 +937,7 @@ export class FlavorTextUtility {
         action.setPokemon(tokens[2]);
         action.setNumber(tokens[3]);
         let actionName = action.number > 1 ? 'hitCount' : 'hitCountSingular';
-        return new ActionMessageBuilder(actionName)
+        return new FlavorTextBuilder(actionName)
             .from(action)
             .setPokemon(action.getPokemonName())
             .build();

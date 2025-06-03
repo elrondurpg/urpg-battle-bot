@@ -19,10 +19,7 @@ async function joinDiscordBattle(req, res) {
         return getInvalidChannelMessage(res);
     }
     try {
-        let name = req.body.member.nick;
-        if (name == undefined) {
-            name = req.body.member.user.global_name;
-        }
+        let name = req.body.member.user.global_name;
         let room = await BATTLE_ROOM_SERVICE.addPlayer(roomId, userId, name);
         await res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,

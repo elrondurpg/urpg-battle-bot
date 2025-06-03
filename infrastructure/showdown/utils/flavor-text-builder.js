@@ -1,10 +1,9 @@
-import { should } from "chai";
 import * as Showdown from "urpg-battle-bot-calc";
 
 const regex = /[^A-Za-z0-9]/g;
 const pokemonNameRegex = /p\d+[a-z]+: (.+)/;
 
-export class ActionMessageBuilder {
+export class FlavorTextBuilder {
     action;
     trainer;
     pokemon;
@@ -240,7 +239,7 @@ export class ActionMessageBuilder {
                 }
                 if (shouldShowAbilityActivation) {
                     text = message;
-                    let abilityActivation = new ActionMessageBuilder("abilityActivation")
+                    let abilityActivation = new FlavorTextBuilder("abilityActivation")
                         .setPokemon(this.pokemon)
                         .setAbility(this.effect)
                         .build();
