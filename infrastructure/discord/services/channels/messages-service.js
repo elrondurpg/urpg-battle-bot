@@ -46,6 +46,9 @@ async function sendNextMessage(channelId) {
                 sendNextMessage(channelId);
             }, error.retry_after * 1000);
         }
+        if (err.message.includes("Unknown Channel")) {
+            console.log("ERROR: attempted to send a message in an unknown channel: " + channelId);
+        }
         else throw err;
     }
 }

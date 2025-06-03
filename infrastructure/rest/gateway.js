@@ -7,9 +7,9 @@ async function send(url, options) {
     });
     if (!res.ok) {
         const data = await res.json();
-        console.log("Error while sending request: ");
-        console.log(url);
-        console.log(options);
+        //console.log("ERROR: error while sending request: ");
+        //console.log(url);
+        //console.log(options);
         throw new Error(JSON.stringify(data));
     }
     return res;
