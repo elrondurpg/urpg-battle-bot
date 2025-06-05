@@ -5,6 +5,7 @@ import { CreateBattleRoomRequest } from '../../../domain/battles/create-battle-r
 import { BadRequestError } from '../../../utils/bad-request-error.js';
 import { getOptionValue } from '../discord-utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
+import { createOpenBattleMessage } from '../services/battles/open-battles-service.js';
 
 export const onCreateBattleRoom = (req, res) => {
     try {
@@ -57,6 +58,7 @@ async function createDiscordBattleRoom(req, res) {
         room.options['discordThreadId'] = thread.id;
         await BATTLES_MESSAGES_SERVICE.create(room, room.getOpenRoomMessage());
         await BATTLE_ROOM_DATA.save(room);
+        await createOpenBattleMessage(room);
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {

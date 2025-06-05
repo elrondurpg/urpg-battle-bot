@@ -30,3 +30,12 @@ export async function put(endpoint, body) {
   }
   return await REST_GATEWAY.put(baseUrl + endpoint, options);
 }
+
+export async function del(endpoint) {
+  let options = {
+    "headers": {
+      "Authorization": `Bot ${process.env.DISCORD_TOKEN}`
+    }
+  }
+  return await REST_GATEWAY.del(baseUrl + endpoint, options);
+}

@@ -50,6 +50,10 @@ export class BattleRoom {
             }
         }
 
+        if (this.rules.rentalClause == true) {
+            message += "\nRental Clause ON";
+        }
+
         let numPlayersNeeded = this.getNumPlayersNeeded();
         if (numPlayersNeeded == 1) {
             message += `\n\n**Looking for ${this.getNumPlayersNeeded()} opponent!**\n`;

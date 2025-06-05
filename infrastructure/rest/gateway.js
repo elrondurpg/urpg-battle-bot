@@ -29,3 +29,8 @@ export async function put(url, options) {
   options['method'] = 'PUT';  
   return await send(url, options);
 }
+
+export async function del(url, options) {
+  options['method'] = 'DELETE';
+  return await send(url, options);
+}
