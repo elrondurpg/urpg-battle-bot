@@ -30,6 +30,10 @@ export async function put(url, options) {
   return await send(url, options);
 }
 
+export async function patch(url, options) {
+  options['method'] = 'PATCH';  
+  return await send(url, options);
+}
 export async function del(url, options) {
   options['method'] = 'DELETE';
   return await send(url, options);

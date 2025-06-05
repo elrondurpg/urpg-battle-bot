@@ -58,7 +58,7 @@ async function createDiscordBattleRoom(req, res) {
         room.options['discordThreadId'] = thread.id;
         await BATTLES_MESSAGES_SERVICE.create(room, room.getOpenRoomMessage());
         await BATTLE_ROOM_DATA.save(room);
-        await createOpenBattleMessage(room);
+        createOpenBattleMessage(room);
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {

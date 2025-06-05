@@ -7,6 +7,7 @@ export const BATTLE_ROOM_SERVICE = new BattleRoomService();
 export const CONFIG_SERVICE = config;
 
 export * as INACTIVE_BATTLES_JOB from "../discord/jobs/inactive-battles-job.js";
+export * as OPEN_BATTLES_SERVICE from "../discord/services/battles/open-battles-service.js";
 
 export * as DISCORD_APPLICATION_COMMANDS_SERVICE from "../discord/services/applications/commands-service.js";
 export * as DISCORD_CHANNELS_MESSAGES_SERVICE from "../discord/services/channels/messages-service.js";

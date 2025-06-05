@@ -1,12 +1,32 @@
 import { capitalize, shorten } from "../../../../utils.js";
 import { CONFIG_SERVICE, DISCORD_GUILD_CHANNELS_SERVICE } from "../../../app/dependency-injection.js";
-import { createSynchronousMessage, deleteSynchronousMessage } from "../channels/synchronous-messages-service.js";
+import { createSynchronousMessage, deleteSynchronousMessage, editSynchronousMessage } from "../channels/synchronous-messages-service.js";
 
 const _lastMessageByGuildId = new Map();
 const _openBattlesByGuildId = new Map();
 
-export function init(guildId, rooms) {
+export async function init(rooms) {
+    let guildIds = new Set();
 
+    for (let room of rooms) {
+        if (room.getNumPlayersNeeded() > 0) {
+            let guildId = room.options['discordGuildId'];
+            guildIds.add(guildId);
+
+            if (!_openBattlesByGuildId.get(guildId)) {
+                _openBattlesByGuildId.set(guildId, []);
+            }
+            _openBattlesByGuildId.get(guildId).push(room);
+        }
+    }
+
+    for(let guildId of guildIds) {
+        let battleSearchChannel = await getBattleSearchChannel(guildId);
+        let content = await getOpenBattleMessageForGuild(guildId);
+        let response = await createSynchronousMessage(battleSearchChannel.id, content);
+        let message = await response.json();
+        _lastMessageByGuildId.set(guildId, message.id);
+    }
 }
 
 export async function createOpenBattleMessage(room) {
@@ -29,10 +49,23 @@ export async function createOpenBattleMessage(room) {
     _lastMessageByGuildId.set(guildId, message.id);
 }
 
-export function del(room) {
+export async function deleteOpenBattleMessage(room) {
     let guildId = room.options['discordGuildId'];
-    if (_lastMessageByGuildId.get(guildId)) {
-        
+    let lastMessageId = _lastMessageByGuildId.get(guildId);
+    if (lastMessageId) {
+        let battleSearchChannel = await getBattleSearchChannel(guildId);
+        if (_openBattlesByGuildId.get(guildId)) {
+            _openBattlesByGuildId.set(guildId, _openBattlesByGuildId.get(guildId).filter(knownRoom => knownRoom.id != room.id));
+        }
+        if (_openBattlesByGuildId.get(guildId).length > 0) {
+            let content = await getOpenBattleMessageForGuild(guildId);
+            await editSynchronousMessage(battleSearchChannel.id, lastMessageId, content);
+        }
+        else {
+            await editSynchronousMessage(battleSearchChannel.id, lastMessageId, "There are no battles waiting for players! Use \`/create-battle\` to create your own!");
+            _lastMessageByGuildId.delete(guildId);
+            _openBattlesByGuildId.delete(guildId);
+        }
     }
 }
 
