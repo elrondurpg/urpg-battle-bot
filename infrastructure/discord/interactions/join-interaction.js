@@ -29,7 +29,8 @@ async function joinDiscordBattle(req, res) {
             }
         });        
         if (room.getNumPlayersNeeded() == 0) {
-            await BATTLES_MESSAGES_SERVICE.create(room, room.getWaitingForSendsMessage());
+            await BATTLES_MESSAGES_SERVICE.create(room, room.getBattleStartMessage());
+            room.sendWaitingForSendsMessages();
             deleteOpenBattleMessage(room);
         }
     } catch (err) {

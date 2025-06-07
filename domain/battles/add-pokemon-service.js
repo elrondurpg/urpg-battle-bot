@@ -1,4 +1,4 @@
-import { ABILITY_SERVICE, BATTLE_ROOM_DATA, ITEM_SERVICE, MOVE_SERVICE, SPECIES_SERVICE, TYPE_SERVICE, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
+import { ABILITY_SERVICE, BATTLE_ROOM_DATA, ITEM_SERVICE, MOVE_SERVICE, SPECIES_SERVICE, TYPE_SERVICE, BATTLE_SERVICE, PLAYER_EXPECTED_ACTION_SERVICE } from "../../infrastructure/app/dependency-injection.js";
 import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
@@ -63,6 +63,10 @@ export async function addPokemon(battleId, trainerId, pokemon) {
     pokemon.id = trainer.pokemonIndex++;
     trainer.pokemon.set(pokemon.id, pokemon);
     room.lastActionTime = process.hrtime.bigint();
+    let numPokemonToSend = room.rules.numPokemonPerTrainer - trainer.pokemon.size;
+    if (numPokemonToSend == 0) {
+        PLAYER_EXPECTED_ACTION_SERVICE.deleteExpectMessage(room, trainerId);
+    }
     let waitingForSends = Array.from(room.trainers.values()).some(trainer => trainer.pokemon.size < room.rules.numPokemonPerTrainer);
     if (room.rules.teamType.toLowerCase() != "open" && !waitingForSends) {
         await BATTLE_SERVICE.create(room);

@@ -3,24 +3,27 @@ import * as DISCORD from "../../discord-gateway.js";
 const firstItems = new Map();
 const lastItems = new Map();
 
+export function next(channelId) {
+    return firstItems.get(channelId);
+}
+
 export async function create(channelId, message) {
     let item = { message: message, channelId: channelId };
     if (!firstItems.get(channelId)) {
         firstItems.set(channelId, item);
         lastItems.set(channelId, item);
-        setTimeout(function() {
-            sendNextMessage(channelId);
-        }, 0);
+        sendNextMessage(channelId);
     }
     else {
         lastItems.get(channelId).next = item;
         lastItems.set(channelId, item);
     }
 }
-    
+
 async function sendNextMessage(channelId) {
+    let firstItem = next(channelId);
+    if (!firstItem) return;
     try {
-        let firstItem = firstItems.get(channelId);
         let response = await sendTextMessage(firstItem.channelId, firstItem.message);
         let headers = response.headers;
         let remaining = headers.get("X-RateLimit-Remaining");
@@ -48,6 +51,8 @@ async function sendNextMessage(channelId) {
         }
         if (err.message.includes("Unknown Channel")) {
             console.log("ERROR: attempted to send a message in an unknown channel: " + channelId);
+            firstItems.delete(channelId);
+            lastItems.delete(channelId);
         }
         else throw err;
     }

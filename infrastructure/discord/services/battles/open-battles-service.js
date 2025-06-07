@@ -23,8 +23,7 @@ export async function init(rooms) {
     for(let guildId of guildIds) {
         let battleSearchChannel = await getBattleSearchChannel(guildId);
         let content = await getOpenBattleMessageForGuild(guildId);
-        let response = await createSynchronousMessage(battleSearchChannel.id, content);
-        let message = await response.json();
+        let message = await createSynchronousMessage(battleSearchChannel.id, content);
         _lastMessageByGuildId.set(guildId, message.id);
     }
 }
@@ -44,8 +43,7 @@ export async function createOpenBattleMessage(room) {
     }
 
     let content = await getOpenBattleMessageForGuild(guildId);
-    let response = await createSynchronousMessage(battleSearchChannel.id, content);
-    let message = await response.json();
+    let message = await createSynchronousMessage(battleSearchChannel.id, content);
     _lastMessageByGuildId.set(guildId, message.id);
 }
 

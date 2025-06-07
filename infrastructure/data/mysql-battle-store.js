@@ -149,7 +149,7 @@ async function startBattle(room) {
     }
     else if (room.getNumPlayersNeeded() == 0 && isWaitingForSends(room)) {
         BATTLES_MESSAGES_SERVICE.create(room, "**The battle resumed!**");
-        BATTLES_MESSAGES_SERVICE.create(room, getWaitingForSendsMessage(room));
+        room.sendWaitingForSendsMessages();
     }
     room.lastActionTime = process.hrtime.bigint();
 }
@@ -211,23 +211,4 @@ function toJSON(battle) {
             return v;
         }
     });
-}
-
-function getWaitingForSendsMessage(room) {
-    let message = "";
-    for (let [id, trainer] of room.trainers) {
-        let numPokemonToSend = room.rules.numPokemonPerTrainer - trainer.pokemon.size;
-        if (numPokemonToSend > 0) {
-            message += `**<@${id}>: You must send ${numPokemonToSend} Pokémon!**\n`;
-            message += "Use \`/send\` to send a Pokémon. Your team will be hidden from your opponent";
-            if (room.rules.numTeams > 2 || room.rules.numTrainersPerTeam > 1) {
-                message += "s";
-            }
-            message += room.rules.teamType == "full" 
-                ? ".\n"
-                : " until all sends have been received.\n";
-        }
-    }
-
-    return message;
 }

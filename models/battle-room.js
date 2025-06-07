@@ -4,6 +4,7 @@ export const SEND_TYPES = [ /*"Public",*/ "Private" ];
 export const TEAM_TYPES = [ /*"Open",*/ "Full", "Preview" ];
 export const STARTING_WEATHERS = [ "None", "Rain Dance", "Sunny Day", "Hail", "Snow", "Sandstorm"  ];
 export const STARTING_TERRAINS = [ "Building", "Cave", "Ice", "Puddles", "Sand/Badlands", "Tall Grass", "Snow", "Water", "Volcano", "Burial Grounds", "Soaring", "Space" ];
+import { PLAYER_EXPECTED_ACTION_SERVICE } from "../infrastructure/app/dependency-injection.js";
 import { capitalize } from "../utils.js";
 
 export class BattleRoom {
@@ -14,6 +15,7 @@ export class BattleRoom {
     rules;
 
     trainers = new Map();
+    expectedActions = new Map();
 
     lastActionTime;
     archived = false;
@@ -67,20 +69,22 @@ export class BattleRoom {
         return message;
     }
 
-    getWaitingForSendsMessage() {
-        let message = "**Battle Start**\n\n";
-        
-        message += `<@${this.teams[0][0]}> vs. <@${this.teams[1][0]}>\n\n`;
-
-        message += `**Each player must send ${this.rules.numPokemonPerTrainer} Pokémon!**\n`;
-        message += "Use \`/send\` to send a Pokémon. Your team will be hidden from your opponent";
-        if (this.rules.numTeams > 2 || this.rules.numTrainersPerTeam > 1) {
-            message += "s";
+    getBattleStartMessage() {
+        return `**Battle Start:** <@${this.teams[0][0]}> vs. <@${this.teams[1][0]}>\n\n`;
+    }
+    
+    sendWaitingForSendsMessages() {
+        for (let [id, trainer] of this.trainers) {
+            let numPokemonToSend = this.rules.numPokemonPerTrainer - trainer.pokemon.size;
+            if (numPokemonToSend > 0) {
+                if (this.rules.teamType == "full") {
+                    PLAYER_EXPECTED_ACTION_SERVICE.createSendExpectMessageForFullTeam(this, id, numPokemonToSend);
+                }
+                else {
+                    PLAYER_EXPECTED_ACTION_SERVICE.createSendExpectMessageForTeamPreview(this, id, numPokemonToSend);
+                }
+            }
         }
-        message += this.rules.teamType == "full" 
-            ? ".\n"
-            : " until all sends have been received.\n";
-        return message;
     }
 
     getPackedTeam(trainerId) {

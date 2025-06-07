@@ -1,5 +1,5 @@
 import Sim from 'urpg-battle-bot-calc';
-import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE } from '../app/dependency-injection.js';
+import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE, BATTLES_SYNCHRONOUS_MESSAGES_SERVICE, PLAYER_EXPECTED_ACTION_SERVICE } from '../app/dependency-injection.js';
 import { FlavorTextUtility } from './utils/showdown-message-processor.js';
 import * as Showdown from "urpg-battle-bot-calc";
 
@@ -24,26 +24,45 @@ export class ShowdownStreamWrapper {
         for await (const output of this._stream) {
             let lines = output.split("\n");
             for (let line of lines) {
-                let tokens = line.split("|");
-                let message;
-                if (tokens.length > 1 && tokens[1] == 'turn') {
-                    message = this.doTurn(tokens[2]);
+                if (this.splitPlayer) {
+                    this.splitCount++;
                 }
-                else if (tokens.length > 1 && tokens[1] == 'teampreview') {
-                    message = this.getTeamPreviewMessage();
+                if (!this.splitPlayer || this.splitCount == 2) {
+                    let tokens = line.split("|");
+                    let message;
+                    
+                    if (this.splitPlayer && this.splitCount == 1) {
+                        message = undefined;
+                    }
+                    else if (tokens.length > 1 && tokens[1] == 'split') {
+                        this.splitPlayer = tokens[2];
+                        this.splitCount = 0;
+                    }
+                    else if (tokens.length > 1 && tokens[1] == 'turn') {
+                        message = this.doTurn(tokens[2]);
+                    }
+                    else if (tokens.length > 1 && tokens[1] == 'teampreview') {
+                        message = this.getTeamPreviewMessage();
+                    }
+                    else if (tokens.length > 1 && tokens[1] == 'request') {
+                        if (!tokens.includes("[silent]")) {
+                            this.doRequest(JSON.parse(tokens[2]));
+                        }
+                    }
+                    else if (tokens.length > 1 && tokens[1] == 'win') {
+                        message = await this.doWin(tokens);
+                    }
+                    else {
+                        message = this.flavorTextUtil.handleMessage(line);
+                    }
+                    if (message && !tokens.includes("[silent]")) {
+                        //console.log(message);
+                        await BATTLES_MESSAGES_SERVICE.create(this._room, message);
+                    }
                 }
-                else if (tokens.length > 1 && tokens[1] == 'request') {
-                    message = this.doRequest(JSON.parse(tokens[2]));
-                }
-                else if (tokens.length > 1 && tokens[1] == 'win') {
-                    message = await this.doWin(tokens);
-                }
-                else {
-                    message = this.flavorTextUtil.handleMessage(line);
-                }
-                if (message && !tokens.includes("[silent]")) {
-                    //console.log(message);
-                    await BATTLES_MESSAGES_SERVICE.create(this._room, message);
+                if (this.splitCount == 2) {
+                    this.splitPlayer = undefined;
+                    this.splitCount = 0;
                 }
             }
             if (!this._stream) {
@@ -53,23 +72,23 @@ export class ShowdownStreamWrapper {
     }
 
     async resume(inputLog) {
-        (async () => this.waitForInput())();
-        this._stream.write(">mute");
-        for (let line of inputLog) {
-            //console.log(line);
-            this._stream.write(line);
-        }
-        this._stream.write(">unmute");
-        await BATTLES_MESSAGES_SERVICE.create(this._room, "**The battle resumed!**");
+        let response = await BATTLES_SYNCHRONOUS_MESSAGES_SERVICE.create(this._room, "**The battle resumed!**");
 
-        let showdownBattle = this._stream.battle;
+        if (response) {
+            (async () => this.waitForInput())();
+            this._stream.write(">mute");
+            for (let line of inputLog) {
+                this._stream.write(line);
+            }
+            this._stream.write(">unmute");
+            let showdownBattle = this._stream.battle;
 
-        if (showdownBattle.turn > 0) {
-            await BATTLES_MESSAGES_SERVICE.create(this._room, this.doTurn(showdownBattle.turn));
-        }
-        for (let request of showdownBattle.getRequests(showdownBattle.requestState)) {
-            let message = this.doRequest(request);
-            await BATTLES_MESSAGES_SERVICE.create(this._room, message);
+            if (showdownBattle.turn > 0) {
+                await BATTLES_MESSAGES_SERVICE.create(this._room, this.doTurn(showdownBattle.turn));
+            }
+            for (let request of showdownBattle.getRequests(showdownBattle.requestState)) {
+                this.doRequest(request);
+            }
         }
     }
 
@@ -147,23 +166,13 @@ export class ShowdownStreamWrapper {
         let trainer = this._stream.battle.sides.find(trainer => trainer.id == request.side.id);
         if (trainer) {
             if (request.active) {
-                let message = `**<@${trainer.userId}>: Select your action for turn ${this._stream.battle.turn}!**\n`;
-                message += "Use `/move` to choose a move.\n";
-                message += "Use `/switch` to switch Pokémon.\n";
-                message += "Use `/help` to view other available commands.\n";
-                return message;
+                PLAYER_EXPECTED_ACTION_SERVICE.createMoveExpectMessage(this._room, trainer.userId, this._stream.battle.turn);
             }
             else if (request.forceSwitch && request.forceSwitch[0]) {
-                let message = `**<@${trainer.userId}>: Choose which Pokémon to switch in!**\n`;
-                message += "Use `/switch` to submit your choice.\n";
-                message += "Use `/help` to view other available commands.\n";
-                return message;
+                PLAYER_EXPECTED_ACTION_SERVICE.createSwitchExpectMessage(this._room, trainer.userId);
             }
             else if (request.teamPreview) {
-                let message = `**<@${trainer.userId}>: Choose your lead Pokémon!**\n`;
-                message += "Use `/lead` to submit your choice.\n";
-                message += "Use `/help` to view other available commands.\n";
-                return message;
+                PLAYER_EXPECTED_ACTION_SERVICE.createLeadExpectMessage(this._room, trainer.userId);
             }
         }
     }

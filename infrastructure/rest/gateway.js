@@ -12,7 +12,15 @@ async function send(url, options) {
         //console.log(options);
         throw new Error(JSON.stringify(data));
     }
-    return res;
+    try {
+      let response = await res.json();
+      response.headers = res.headers;
+      return response;
+    } catch (err) {
+      if (!err.message.includes("Unexpected end of JSON input")) {
+        throw err;
+      }
+    }
 }
 
 export async function get(url, options) {
