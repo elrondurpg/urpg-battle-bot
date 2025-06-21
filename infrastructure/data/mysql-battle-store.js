@@ -17,12 +17,17 @@ export class MySqlBattleStore {
     }
 
     async connect() {
-        this.connection = await mysql.createPool({
-            host: process.env.BATTLE_STORE_HOST,
-            user: process.env.BATTLE_STORE_USER,
-            password: process.env.BATTLE_STORE_PASSWORD,
-            database: process.env.BATTLE_STORE_DATABASE
-        });
+        try {
+            this.connection = await mysql.createPool({
+                host: process.env.BATTLE_STORE_HOST,
+                user: process.env.BATTLE_STORE_USER,
+                password: process.env.BATTLE_STORE_PASSWORD,
+                database: process.env.BATTLE_STORE_DATABASE
+            });
+        } catch (err) {
+            console.log("Couldn't connect to database.");
+            console.log(err);
+        }
     }
 
     async get(id) {
@@ -72,6 +77,7 @@ export class MySqlBattleStore {
             OPEN_BATTLES_SERVICE.init(Array.from(this._rooms.values()));
         } catch (err) {
             console.log("Couldn't load stored battle data.");
+            console.log(err);
         }
     }
 
@@ -85,7 +91,12 @@ export class MySqlBattleStore {
         if (!this.connection) {
             await this.connect();
         }
-        await this.connection.query(_CREATE_QUERY, [room.id, data]);
+        try {
+            await this.connection.query(_CREATE_QUERY, [room.id, data]);
+        } catch (err) {
+            console.log("Couldn't create battle room.");
+            console.log(err);
+        }
         this._rooms.set(room.id, room);
         return room;
     }
