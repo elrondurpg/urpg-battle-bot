@@ -12,10 +12,4 @@ export function registerSignals() {
     await BATTLE_ROOM_DATA.saveAll();
     process.exit(0);
     });
-
-    process.on('SIGKILL', async () => {
-    console.log('SIGKILL signal received.');
-    await BATTLE_ROOM_DATA.saveAll();
-    process.exit(0);
-    });
 }
