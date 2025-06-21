@@ -3,17 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "description": "Discord bot for Pokémon battle simulator for Pokémon Ultra RPG.",
-  "main": "app.js",
+  "main": "urpg-battle-bot-app.js",
   "type": "module",
   "engines": {
     "node": ">=18.x"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node urpg-battle-bot-app.js",
     "register": "node commands.js",
-    "dev": "nodemon app.js",
+    "dev": "nodemon urpg-battle-bot-app.js",
     "test": "mocha --inspect",
-    "debug": "nodemon --inspect app.js"
+    "debug": "nodemon --inspect urpg-battle-bot-app.js"
   },
   "author": "Elrond URPG",
   "license": "MIT",
