@@ -132,7 +132,11 @@ export class MySqlBattleStore {
 }
 
 async function parseBattleStringToJson(s) {
-    let data = JSON.parse(s.data, (_, v) => {
+    const dataToParse = s.data;
+    if (typeof dataToParse != 'string') {
+        dataToParse = JSON.stringify(dataToParse);
+    }
+    let data = JSON.parse(dataToParse, (_, v) => {
         if(typeof v === 'object' && v !== null) {
             if (v.dataType === 'Map') {
               return new Map(v.value);
