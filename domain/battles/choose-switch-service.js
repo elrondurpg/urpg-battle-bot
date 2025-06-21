@@ -1,4 +1,4 @@
-import { BATTLE_ROOM_DATA, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
+import { BATTLE_ROOM_DATA, BATTLE_SERVICE, PLAYER_EXPECTED_ACTION_SERVICE } from "../../infrastructure/app/dependency-injection.js";
 import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
@@ -17,5 +17,6 @@ export async function chooseSwitch(roomId, trainerId, pokemonId) {
 
     room.lastActionTime = process.hrtime.bigint();
     await BATTLE_SERVICE.switchPokemon(room.id, trainer.id, pokemonId);
+    PLAYER_EXPECTED_ACTION_SERVICE.deleteExpectMessage(room, trainer.id);
     await BATTLE_ROOM_DATA.save(room);
 }

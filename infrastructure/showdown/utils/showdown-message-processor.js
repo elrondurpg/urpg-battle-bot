@@ -2,8 +2,6 @@ import { pokemonLongRegex, ShowdownMessage } from '../models/showdown-message.js
 import { FlavorTextBuilder } from './flavor-text-builder.js';
 
 export class FlavorTextUtility {
-    splitPlayer;
-    splitCount = 0;
     stream;
     
     constructor(stream) {
@@ -13,9 +11,6 @@ export class FlavorTextUtility {
     handleMessage(command) {
         //console.log(command);
         if (command != undefined) {
-            if (this.splitPlayer != undefined) {
-                this.splitCount++;
-            }
             let message = undefined;
             let tokens = command.split("|");
             if (tokens.length > 0 && tokens[0] != '') {
@@ -59,12 +54,7 @@ export class FlavorTextUtility {
                         message = this.doMiss(action);
                         break;
                     case '-damage': 
-                        if (this.splitPlayer == undefined || this.splitCount == 2) {
-                            message = this.doHealOrDamage(action);
-                        }
-                        if (this.splitPlayer && this.splitCount == 1) {
-                            message = "N/A";
-                        }
+                        message = this.doHealOrDamage(action);
                         break;
                     case '-heal':
                         message = this.doHealOrDamage(action);
@@ -103,11 +93,6 @@ export class FlavorTextUtility {
                         break;
                     case '-copyboost':
                         message = this.doCopyBoost(action);
-                        break;
-                    case 'split': 
-                        this.splitPlayer = tokens[2];
-                        this.splitCount = 0;
-                        message = "N/A";
                         break;
                     case '-weather': 
                         message = this.doWeather(action);
@@ -211,22 +196,12 @@ export class FlavorTextUtility {
                 }
             }
 
-            if (message != undefined && (this.splitPlayer == undefined || this.splitCount == 2)) {
-                if (this.splitCount == 2) {
-                    this.splitPlayer = undefined;
-                    this.splitCount = 0;
-                }
+            if (message != undefined) {
                 if (message != "N/A") {
                     if (!message.trim().startsWith("(") && !tokens.includes("[silent]")) {
                         return message;
                     }
                 } 
-            }
-            else if (this.splitPlayer == undefined || this.splitCount == 2) {
-                if (this.splitCount == 2) {
-                    this.splitPlayer = undefined;
-                    this.splitCount = 0;
-                }
             }
 
             if (message == undefined) {

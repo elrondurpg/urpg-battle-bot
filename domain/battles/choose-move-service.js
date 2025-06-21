@@ -1,4 +1,4 @@
-import { BATTLE_ROOM_DATA, MOVE_SERVICE, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
+import { BATTLE_ROOM_DATA, MOVE_SERVICE, BATTLE_SERVICE, PLAYER_EXPECTED_ACTION_SERVICE } from "../../infrastructure/app/dependency-injection.js";
 import { BadRequestError } from "../../utils/bad-request-error.js";
 import * as BATTLE_VALIDATOR from "./battle-validations.js";
 
@@ -54,6 +54,7 @@ export async function chooseMove(roomId, trainerId, request) {
         : request.shouldZMove ? "zmove"
         : "";
     await BATTLE_SERVICE.move(room.id, trainer.id, request.move, modifier);
+    PLAYER_EXPECTED_ACTION_SERVICE.deleteExpectMessage(room, trainer.id);
     await BATTLE_ROOM_DATA.save(room);
 }
 

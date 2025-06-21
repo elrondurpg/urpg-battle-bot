@@ -21,6 +21,16 @@ export async function post(endpoint, body) {
   return await REST_GATEWAY.post(baseUrl + endpoint, options);
 }
 
+export async function patch(endpoint, body) {
+  let options = {
+    "headers": {
+      "Authorization": `Bot ${process.env.DISCORD_TOKEN}`
+    },
+    body: body
+  }
+  return await REST_GATEWAY.patch(baseUrl + endpoint, options);
+}
+
 export async function put(endpoint, body) {
   let options = {
     "headers": {
@@ -29,4 +39,13 @@ export async function put(endpoint, body) {
     body: body
   }
   return await REST_GATEWAY.put(baseUrl + endpoint, options);
+}
+
+export async function del(endpoint) {
+  let options = {
+    "headers": {
+      "Authorization": `Bot ${process.env.DISCORD_TOKEN}`
+    }
+  }
+  return await REST_GATEWAY.del(baseUrl + endpoint, options);
 }

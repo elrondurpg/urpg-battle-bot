@@ -12,7 +12,15 @@ async function send(url, options) {
         //console.log(options);
         throw new Error(JSON.stringify(data));
     }
-    return res;
+    try {
+      let response = await res.json();
+      response.headers = res.headers;
+      return response;
+    } catch (err) {
+      if (!err.message.includes("Unexpected end of JSON input")) {
+        throw err;
+      }
+    }
 }
 
 export async function get(url, options) {
@@ -27,5 +35,14 @@ export async function post(url, options) {
 
 export async function put(url, options) {
   options['method'] = 'PUT';  
+  return await send(url, options);
+}
+
+export async function patch(url, options) {
+  options['method'] = 'PATCH';  
+  return await send(url, options);
+}
+export async function del(url, options) {
+  options['method'] = 'DELETE';
   return await send(url, options);
 }

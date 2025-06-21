@@ -6,6 +6,5 @@ export async function create(channelId, name) {
             name: name, 
             type: 11 
     };
-    const threadResponse = await DISCORD.post(threadEndpoint, body);
-    return await threadResponse.json();
+    return await DISCORD.post(threadEndpoint, body);
 }

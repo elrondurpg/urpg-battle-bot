@@ -7,13 +7,16 @@ export const BATTLE_ROOM_SERVICE = new BattleRoomService();
 export const CONFIG_SERVICE = config;
 
 export * as INACTIVE_BATTLES_JOB from "../discord/jobs/inactive-battles-job.js";
-export * as OPEN_BATTLES_JOB from "../discord/jobs/open-battles-job.js";
+export * as OPEN_BATTLES_SERVICE from "../discord/services/battles/open-battles-service.js";
+export * as PLAYER_EXPECTED_ACTION_SERVICE from "../discord/services/battles/player-expected-actions-service.js";
 
 export * as DISCORD_APPLICATION_COMMANDS_SERVICE from "../discord/services/applications/commands-service.js";
 export * as DISCORD_CHANNELS_MESSAGES_SERVICE from "../discord/services/channels/messages-service.js";
+export * as DISCORD_CHANNELS_SYNCHRONOUS_MESSAGES_SERVICE from "../discord/services/channels/synchronous-messages-service.js";
 export * as DISCORD_CHANNELS_THREADS_SERVICE from "../discord/services/channels/threads-service.js";
 export * as DISCORD_GUILD_CHANNELS_SERVICE from "../discord/services/guilds/channels-service.js";
 import * as discordServicesBattlesMessageService from "../discord/services/battles/messages-service.js";
+import * as discordServicesBattlesSynchronousMessagesService from "../discord/services/battles/synchronous-messages-service.js";
 import * as testMessageService from "../../test/TestMessageService.js";
 export let BATTLES_MESSAGES_SERVICE;
 if (process.env.USE_TEST_MESSAGES === 'true') {
@@ -21,6 +24,13 @@ if (process.env.USE_TEST_MESSAGES === 'true') {
 }
 else {
     BATTLES_MESSAGES_SERVICE = discordServicesBattlesMessageService;
+}
+export let BATTLES_SYNCHRONOUS_MESSAGES_SERVICE;
+if (process.env.USE_TEST_MESSAGES === 'true') {
+    BATTLES_SYNCHRONOUS_MESSAGES_SERVICE = testMessageService;
+}
+else {
+    BATTLES_SYNCHRONOUS_MESSAGES_SERVICE = discordServicesBattlesSynchronousMessagesService;
 }
 
 export * as BATTLE_SERVICE from "../showdown/services/battles/battle-service.js";

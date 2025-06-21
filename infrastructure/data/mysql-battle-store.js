@@ -1,6 +1,6 @@
 import * as mysql from 'mysql';
 import { BattleRoom, BattleRules } from '../../models/battle-room.js';
-import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE } from '../app/dependency-injection.js';
+import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE, OPEN_BATTLES_SERVICE } from '../app/dependency-injection.js';
 import { AddPlayerRequest } from '../../domain/battles/add-player-request.js';
 
 const _GET_ALL_QUERY = "SELECT * FROM battles";
@@ -11,7 +11,7 @@ const _DELETE_QUERY = "DELETE FROM battles WHERE id = ?";
 
 export class MySqlBattleStore {
     connection;
-    _battles = new Map();
+    _rooms = new Map();
 
     constructor() {
         this.connection = mysql.createConnection({
@@ -24,8 +24,8 @@ export class MySqlBattleStore {
 
     async get(id) {
         let bigIntId = BigInt(id);
-        if (this._battles.has(bigIntId)) {
-            return this._battles.get(bigIntId);
+        if (this._rooms.has(bigIntId)) {
+            return this._rooms.get(bigIntId);
         }
         else {
             return new Promise((resolve, reject) => {
@@ -39,7 +39,7 @@ export class MySqlBattleStore {
                                 let wrapper = await parseBattleStringToJson(result);
                                 let battle = Object.assign(new BattleRoom, wrapper);
                                 await startBattle(battle);
-                                this._battles.set(BigInt(battle.id), battle);
+                                this._rooms.set(BigInt(battle.id), battle);
                                 battle.archived = false;
                                 resolve(battle);
                             }
@@ -61,24 +61,25 @@ export class MySqlBattleStore {
             else {
                 for (let result of results) {
                     let wrapper = await parseBattleStringToJson(result);
-                    let battle = Object.assign(new BattleRoom, wrapper);
-                    if (!battle.archived) {
-                        await startBattle(battle);
-                        this._battles.set(BigInt(battle.id), battle);
+                    let room = Object.assign(new BattleRoom, wrapper);
+                    if (!room.archived) {
+                        await startBattle(room);
+                        this._rooms.set(BigInt(room.id), room);
                     }
                 }
+                OPEN_BATTLES_SERVICE.init(Array.from(this._rooms.values()));
             }
         });
     }
 
     getAll() {
-        return this._battles;
+        return this._rooms;
     }
     
-    async create(battle) {
-        battle.id = process.hrtime.bigint();
-        let data = toJSON(new BattleDataWrapper(battle));
-        await this.connection.query(_CREATE_QUERY, [battle.id, data], (err, results) => {
+    async create(room) {
+        room.id = process.hrtime.bigint();
+        let data = toJSON(new BattleRoomDataWrapper(room));
+        await this.connection.query(_CREATE_QUERY, [room.id, data], (err, results) => {
                 //console.log(err);
                 //console.log(results);
         });
@@ -88,39 +89,39 @@ export class MySqlBattleStore {
         else {
             throw new BattleIdCollisionError();
         }*/
-        this._battles.set(battle.id, battle);
-        return battle;
+        this._rooms.set(room.id, room);
+        return room;
     }
 
-    async archive(battle) {
-        BATTLES_MESSAGES_SERVICE.create(battle, "**This battle has been archived due to inactivity.** Resume battle with any slash command.");
-        this._battles.delete(BigInt(battle.id));
-        battle.archived = true;
-        return this.save(battle);
+    async archive(room) {
+        BATTLES_MESSAGES_SERVICE.create(room, "**This battle has been archived due to inactivity.** Resume battle with any slash command.");
+        this._rooms.delete(BigInt(room.id));
+        room.archived = true;
+        return this.save(room);
     }
 
-    async save(battle) {
-        let data = toJSON(new BattleDataWrapper(battle));
-        await this.connection.query(_UPDATE_QUERY, [data, battle.id], (err, results) => {
+    async save(room) {
+        let data = toJSON(new BattleRoomDataWrapper(room));
+        await this.connection.query(_UPDATE_QUERY, [data, room.id], (err, results) => {
             //console.log(err);
             //console.log(results);
             // build a battle object and start its stream
         });
-        return battle;
+        return room;
     }
 
     async saveAll() {
-        await Object.entries(this._battles).forEach(async battle => await this.save(battle));
+        await Object.entries(this._rooms).forEach(async room => await this.save(room));
     }
 
-    async delete(battle) {
-        this._battles.delete(battle.id);
-        await this.connection.query(_DELETE_QUERY, [battle.id], (err, results) => {
+    async delete(room) {
+        this._rooms.delete(room.id);
+        await this.connection.query(_DELETE_QUERY, [room.id], (err, results) => {
             //console.log(err);
             //console.log(results);
             // build a battle object and start its stream
         });
-        return battle;
+        return room;
     }
 }
 
@@ -134,7 +135,7 @@ async function parseBattleStringToJson(s) {
         }
         else return v;
     });
-    return Object.assign(new BattleDataWrapper, data);
+    return Object.assign(new BattleRoomDataWrapper, data);
 }
 
 async function startBattle(room) {
@@ -148,7 +149,7 @@ async function startBattle(room) {
     }
     else if (room.getNumPlayersNeeded() == 0 && isWaitingForSends(room)) {
         BATTLES_MESSAGES_SERVICE.create(room, "**The battle resumed!**");
-        BATTLES_MESSAGES_SERVICE.create(room, getWaitingForSendsMessage(room));
+        room.sendWaitingForSendsMessages();
     }
     room.lastActionTime = process.hrtime.bigint();
 }
@@ -157,7 +158,7 @@ function isWaitingForSends(room) {
     return Array.from(room.trainers.values()).some(trainer => trainer.pokemon.size < room.rules.numPokemonPerTrainer);
 }
 
-class BattleDataWrapper {
+class BattleRoomDataWrapper {
     options;
     id;
     ownerId;
@@ -210,23 +211,4 @@ function toJSON(battle) {
             return v;
         }
     });
-}
-
-function getWaitingForSendsMessage(battle) {
-    let message = "";
-    for (let [id, trainer] of battle.trainers) {
-        let numPokemonToSend = battle.rules.numPokemonPerTrainer - trainer.pokemon.size;
-        if (numPokemonToSend > 0) {
-            message += `**<@${id}>: You must send ${numPokemonToSend} Pokémon!**\n`;
-            message += "Use \`/send\` to send a Pokémon. Your team will be hidden from your opponent";
-            if (battle.rules.numTeams > 2 || battle.rules.numTrainersPerTeam > 1) {
-                message += "s";
-            }
-            message += battle.rules.teamType == "full" 
-                ? ".\n"
-                : " until all sends have been received.\n";
-        }
-    }
-
-    return message;
 }

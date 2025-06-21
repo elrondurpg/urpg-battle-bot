@@ -4,6 +4,7 @@ import { BATTLE_THREAD_TAG } from '../../../constants.js';
 import * as ValidationRules from '../../../utils/validation-rules.js';
 import { BadRequestError } from '../../../utils/bad-request-error.js';
 import { getInvalidChannelMessage } from '../discord-utils.js';
+import { deleteOpenBattleMessage } from '../services/battles/open-battles-service.js';
 
 export const joinBattle = (req, res) => {
     return joinDiscordBattle(req, res)
@@ -28,7 +29,9 @@ async function joinDiscordBattle(req, res) {
             }
         });        
         if (room.getNumPlayersNeeded() == 0) {
-            await BATTLES_MESSAGES_SERVICE.create(room, room.getWaitingForSendsMessage());
+            await BATTLES_MESSAGES_SERVICE.create(room, room.getBattleStartMessage());
+            room.sendWaitingForSendsMessages();
+            deleteOpenBattleMessage(room);
         }
     } catch (err) {
         if (err instanceof BadRequestError) {
