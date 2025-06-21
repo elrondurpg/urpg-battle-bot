@@ -1,4 +1,4 @@
-import * as mysql from 'mysql';
+import * as mysql from 'mysql2/promise';
 import { BattleRoom, BattleRules } from '../../models/battle-room.js';
 import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE, OPEN_BATTLES_SERVICE } from '../app/dependency-injection.js';
 import { AddPlayerRequest } from '../../domain/battles/add-player-request.js';
@@ -14,7 +14,10 @@ export class MySqlBattleStore {
     _rooms = new Map();
 
     constructor() {
-        this.connection = mysql.createConnection({
+    }
+
+    async connect() {
+        this.connection = await mysql.createPool({
             host: process.env.BATTLE_STORE_HOST,
             user: process.env.BATTLE_STORE_USER,
             password: process.env.BATTLE_STORE_PASSWORD,
@@ -28,48 +31,48 @@ export class MySqlBattleStore {
             return this._rooms.get(bigIntId);
         }
         else {
-            return new Promise((resolve, reject) => {
-                return this.connection.query(_GET_BY_ID_QUERY, [id], async (err, results) => {
-                    if (err) {
-                        reject("Couldn't load stored battle data.");
+            if (!this.connection) {
+                await this.connect();
+            }
+            try {
+                const [results] = this.connection.query(_GET_BY_ID_QUERY, [id]);
+                if (results && results.size > 0) {
+                    for (let result of results) {
+                        let wrapper = await parseBattleStringToJson(result);
+                        let battle = Object.assign(new BattleRoom, wrapper);
+                        await startBattle(battle);
+                        this._rooms.set(BigInt(battle.id), battle);
+                        battle.archived = false;
+                        resolve(battle);
                     }
-                    else {
-                        if (results && results.size > 0) {
-                            for (let result of results) {
-                                let wrapper = await parseBattleStringToJson(result);
-                                let battle = Object.assign(new BattleRoom, wrapper);
-                                await startBattle(battle);
-                                this._rooms.set(BigInt(battle.id), battle);
-                                battle.archived = false;
-                                resolve(battle);
-                            }
-                        }
-                        else {
-                            resolve(undefined);
-                        }
-                    }
-                });
-            });
+                }
+                else {
+                    resolve(undefined);
+                }
+            } catch (err) {
+                console.log("Couldn't load stored battle data by ID.");
+            }
         }
     }
 
     async loadAll() {
-        await this.connection.query(_GET_ALL_QUERY, async (err, results) => {
-            if (err) {
-                console.log("Couldn't load stored battle data.");
-            }
-            else {
-                for (let result of results) {
-                    let wrapper = await parseBattleStringToJson(result);
-                    let room = Object.assign(new BattleRoom, wrapper);
-                    if (!room.archived) {
-                        await startBattle(room);
-                        this._rooms.set(BigInt(room.id), room);
-                    }
+        if (!this.connection) {
+            await this.connect();
+        }
+        try {
+            const [results] = await this.connection.query(_GET_ALL_QUERY);
+            for (let result of results) {
+                let wrapper = await parseBattleStringToJson(result);
+                let room = Object.assign(new BattleRoom, wrapper);
+                if (!room.archived) {
+                    await startBattle(room);
+                    this._rooms.set(BigInt(room.id), room);
                 }
-                OPEN_BATTLES_SERVICE.init(Array.from(this._rooms.values()));
             }
-        });
+            OPEN_BATTLES_SERVICE.init(Array.from(this._rooms.values()));
+        } catch (err) {
+            console.log("Couldn't load stored battle data.");
+        }
     }
 
     getAll() {
@@ -79,16 +82,10 @@ export class MySqlBattleStore {
     async create(room) {
         room.id = process.hrtime.bigint();
         let data = toJSON(new BattleRoomDataWrapper(room));
-        await this.connection.query(_CREATE_QUERY, [room.id, data], (err, results) => {
-                //console.log(err);
-                //console.log(results);
-        });
-        /*if (!this._battles.get(battle.id)) {
-            this._battles.set(battle.id, battle);
+        if (!this.connection) {
+            await this.connect();
         }
-        else {
-            throw new BattleIdCollisionError();
-        }*/
+        await this.connection.query(_CREATE_QUERY, [room.id, data]);
         this._rooms.set(room.id, room);
         return room;
     }
@@ -102,11 +99,10 @@ export class MySqlBattleStore {
 
     async save(room) {
         let data = toJSON(new BattleRoomDataWrapper(room));
-        await this.connection.query(_UPDATE_QUERY, [data, room.id], (err, results) => {
-            //console.log(err);
-            //console.log(results);
-            // build a battle object and start its stream
-        });
+        if (!this.connection) {
+            await this.connect();
+        }
+        await this.connection.query(_UPDATE_QUERY, [data, room.id]);
         return room;
     }
 
@@ -116,11 +112,10 @@ export class MySqlBattleStore {
 
     async delete(room) {
         this._rooms.delete(room.id);
-        await this.connection.query(_DELETE_QUERY, [room.id], (err, results) => {
-            //console.log(err);
-            //console.log(results);
-            // build a battle object and start its stream
-        });
+        if (!this.connection) {
+            await this.connect();
+        }
+        await this.connection.query(_DELETE_QUERY, [room.id]);
         return room;
     }
 }
