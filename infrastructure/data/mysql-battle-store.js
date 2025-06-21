@@ -132,7 +132,7 @@ export class MySqlBattleStore {
 }
 
 async function parseBattleStringToJson(s) {
-    const dataToParse = s.data;
+    let dataToParse = s.data;
     if (typeof dataToParse != 'string') {
         dataToParse = JSON.stringify(dataToParse);
     }
