@@ -1,75 +1,89 @@
 import { capitalize, shorten } from "../../../../utils.js";
-import { CONFIG_SERVICE, DISCORD_GUILD_CHANNELS_SERVICE } from "../../../app/dependency-injection.js";
+import { CONFIG_DATA, CONSUMER_DATA, DISCORD_GUILD_CHANNELS_SERVICE } from "../../../app/dependency-injection.js";
 import { createSynchronousMessage, deleteSynchronousMessage, editSynchronousMessage } from "../channels/synchronous-messages-service.js";
+import { DiscordConstants } from '../../discord-constants.js';
 
-const _lastMessageByGuildId = new Map();
-const _openBattlesByGuildId = new Map();
+const _lastMessageByConsumerId = new Map();
+const _openBattlesByConsumerId = new Map();
 
 export async function init(rooms) {
-    let guildIds = new Set();
+    let consumerIds = new Set();
 
     for (let room of rooms) {
         if (room.getNumPlayersNeeded() > 0) {
-            let guildId = room.options['discordGuildId'];
-            guildIds.add(guildId);
+            let consumerId = room.consumerId;
+            consumerId.add(consumerId);
 
-            if (!_openBattlesByGuildId.get(guildId)) {
-                _openBattlesByGuildId.set(guildId, []);
+            if (!_openBattlesByConsumerId.get(consumerId)) {
+                _openBattlesByConsumerId.set(consumerId, []);
             }
-            _openBattlesByGuildId.get(guildId).push(room);
+            _openBattlesByConsumerId.get(consumerId).push(room);
         }
     }
 
-    for(let guildId of guildIds) {
-        let battleSearchChannel = await getBattleSearchChannel(guildId);
-        let content = await getOpenBattleMessageForGuild(guildId);
+    // Performance of this loop could be improved by instead 
+    // getting the consumer IDs of all guilds first
+    // and putting them into a map by guildId
+
+    for(let consumerId of consumerIds) {
+        let battleSearchChannelName = await getBattleSearchChannelNameByConsumerId(consumerId);
+        let consumer = await CONSUMER_DATA.getById(consumerId);
+        let guildId = consumer.platformSpecificId;
+        let battleSearchChannel = await getBattleSearchChannelForGuild(guildId, battleSearchChannelName);
+        let content = await buildOpenBattleMessageForConsumer(consumerId);
         let message = await createSynchronousMessage(battleSearchChannel.id, content);
-        _lastMessageByGuildId.set(guildId, message.id);
+        _lastMessageByConsumerId.set(consumerId, message.id);
     }
 }
 
 export async function createOpenBattleMessage(room) {
-    let guildId = room.options['discordGuildId'];
+    let consumerId = room.consumerId;
 
-    if (!_openBattlesByGuildId.get(guildId)) {
-        _openBattlesByGuildId.set(guildId, []);
+    if (!_openBattlesByConsumerId.get(consumerId)) {
+        _openBattlesByConsumerId.set(consumerId, []);
     }
-    _openBattlesByGuildId.get(guildId).push(room);
+    _openBattlesByConsumerId.get(consumerId).push(room);
 
-    let battleSearchChannel = await getBattleSearchChannel(guildId);
-    if (_lastMessageByGuildId.get(guildId)) {
-        await deleteSynchronousMessage(battleSearchChannel.id, _lastMessageByGuildId.get(guildId));
-        _lastMessageByGuildId.delete(guildId);
+    let battleSearchChannelName = await getBattleSearchChannelNameByConsumerId(consumerId);
+    let consumer = await CONSUMER_DATA.getById(consumerId);
+    let guildId = consumer.platformSpecificId;
+    let battleSearchChannel = await getBattleSearchChannelForGuild(guildId, battleSearchChannelName);
+    if (_lastMessageByConsumerId.get(consumerId)) {
+        await deleteSynchronousMessage(battleSearchChannel.id, _lastMessageByConsumerId.get(consumerId));
+        _lastMessageByConsumerId.delete(consumerId);
     }
 
-    let content = await getOpenBattleMessageForGuild(guildId);
+    let content = await buildOpenBattleMessageForConsumer(consumerId);
     let message = await createSynchronousMessage(battleSearchChannel.id, content);
-    _lastMessageByGuildId.set(guildId, message.id);
+    _lastMessageByConsumerId.set(consumerId, message.id);
 }
 
 export async function deleteOpenBattleMessage(room) {
-    let guildId = room.options['discordGuildId'];
-    let lastMessageId = _lastMessageByGuildId.get(guildId);
+    let consumerId = room.consumerId;
+    let lastMessageId = _lastMessageByConsumerId.get(consumerId);
     if (lastMessageId) {
-        let battleSearchChannel = await getBattleSearchChannel(guildId);
-        if (_openBattlesByGuildId.get(guildId)) {
-            _openBattlesByGuildId.set(guildId, _openBattlesByGuildId.get(guildId).filter(knownRoom => knownRoom.id != room.id));
+        let battleSearchChannelName = await getBattleSearchChannelNameByConsumerId(consumerId);
+        let consumer = await CONSUMER_DATA.getById(consumerId);
+        let guildId = consumer.platformSpecificId;
+        let battleSearchChannel = await getBattleSearchChannelForGuild(guildId, battleSearchChannelName);
+        if (_openBattlesByConsumerId.get(consumerId)) {
+            _openBattlesByConsumerId.set(consumerId, _openBattlesByConsumerId.get(consumerId).filter(knownRoom => knownRoom.id != room.id));
         }
-        if (_openBattlesByGuildId.get(guildId).length > 0) {
-            let content = await getOpenBattleMessageForGuild(guildId);
+        if (_openBattlesByConsumerId.get(consumerId).length > 0) {
+            let content = await buildOpenBattleMessageForConsumer(consumerId);
             await editSynchronousMessage(battleSearchChannel.id, lastMessageId, content);
         }
         else {
             await editSynchronousMessage(battleSearchChannel.id, lastMessageId, "There are no battles waiting for players! Use \`/create-battle\` to create your own!");
-            _lastMessageByGuildId.delete(guildId);
-            _openBattlesByGuildId.delete(guildId);
+            _lastMessageByConsumerId.delete(consumerId);
+            _openBattlesByConsumerId.delete(consumerId);
         }
     }
 }
 
-async function getOpenBattleMessageForGuild(guildId) {
+async function buildOpenBattleMessageForConsumer(consumerId) {
     let message = "***Players Looking for Opponents***\n";
-    for (let battle of _openBattlesByGuildId.get(guildId)) {
+    for (let battle of _openBattlesByConsumerId.get(consumerId)) {
         let battleMessage = getBattleMessage(battle);
         if (battleMessage) {
             message += battleMessage;
@@ -90,7 +104,11 @@ function getBattleMessage(room) {
     }
 }
 
-async function getBattleSearchChannel(guildId) {
-    let channels = await DISCORD_GUILD_CHANNELS_SERVICE.read(guildId);
-    return channels.find(channel => channel.name == CONFIG_SERVICE.getBattleSearchChannelName());
+async function getBattleSearchChannelNameByConsumerId(consumerId) {
+    return await CONFIG_DATA.get(consumerId, DiscordConstants.BATTLE_SEARCH_CHANNEL_NAME_PROPERTY_NAME);
+}
+
+async function getBattleSearchChannelForGuild(guildId, channelName) {
+    let channels = await DISCORD_GUILD_CHANNELS_SERVICE.getAll(guildId);
+    return channels.find(channel => channel.name == channelName);
 }

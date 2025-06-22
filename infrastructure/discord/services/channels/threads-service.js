@@ -8,3 +8,8 @@ export async function create(channelId, name) {
     };
     return await DISCORD.post(threadEndpoint, body);
 }
+
+export async function getAll(channelId) {
+    const endpoint = `/channels/${channelId}/archived/public`;
+    return await DISCORD.get(endpoint);
+}

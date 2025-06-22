@@ -1,11 +1,12 @@
 import { InteractionResponseType, InteractionResponseFlags } from 'discord-interactions';
 import { BattleIdCollisionError } from '../../../models/battle-room.js';
-import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE, CONFIG_SERVICE, DISCORD_CHANNELS_THREADS_SERVICE } from '../../app/dependency-injection.js';
+import { BATTLE_ROOM_DATA, BATTLE_ROOM_SERVICE, BATTLES_MESSAGES_SERVICE, CONFIG_DATA, CONSUMER_DATA, DISCORD_CHANNELS_THREADS_SERVICE } from '../../app/dependency-injection.js';
 import { CreateBattleRoomRequest } from '../../../domain/battles/create-battle-room-request.js';
 import { BadRequestError } from '../../../utils/bad-request-error.js';
 import { getOptionValue } from '../discord-utils.js';
 import { BATTLE_THREAD_TAG } from '../../../constants.js';
 import { createOpenBattleMessage } from '../services/battles/open-battles-service.js';
+import { DiscordConstants } from '../discord-constants.js';
 
 export const onCreateBattleRoom = (req, res) => {
     try {
@@ -20,12 +21,16 @@ export const onCreateBattleRoom = (req, res) => {
 async function createDiscordBattleRoom(req, res) {
     const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
-    if (CONFIG_SERVICE.getBattleSearchChannelName() != channelName) {
+
+    let consumer = await CONSUMER_DATA.getByPlatformAndPlatformSpecificId(DiscordConstants.DISCORD_PLATFORM_NAME, guildId);
+    let battleSearchChannelName = await CONFIG_DATA.get(consumer.id, DiscordConstants.BATTLE_SEARCH_CHANNEL_NAME_PROPERTY_NAME);
+
+    if (channelName != battleSearchChannelName) {
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
                 flags: InteractionResponseFlags.EPHEMERAL,
-                content: `This server has limited the use of /create-battle to the #battle-search channel.`
+                content: `This server has limited the use of /create-battle to the #${battleSearchChannelName} channel.`
             }
         });
     }
@@ -54,7 +59,7 @@ async function createDiscordBattleRoom(req, res) {
         const channelId = req.body.channel.id;
         const threadName = `${BATTLE_THREAD_TAG}${room.id}`;
         let thread = await DISCORD_CHANNELS_THREADS_SERVICE.create(channelId, threadName);
-        room.options['discordGuildId'] = guildId;
+        room.consumerId = consumer.id;
         room.options['discordThreadId'] = thread.id;
         await BATTLES_MESSAGES_SERVICE.create(room, room.getOpenRoomMessage());
         await BATTLE_ROOM_DATA.save(room);

@@ -1,7 +1,7 @@
-import * as mysql from 'mysql2/promise';
-import { BattleRoom, BattleRules } from '../../models/battle-room.js';
-import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE, OPEN_BATTLES_SERVICE } from '../app/dependency-injection.js';
-import { AddPlayerRequest } from '../../domain/battles/add-player-request.js';
+import * as MySqlConnectionPool from './mysql-connection-pool.js';
+import { BattleRoom, BattleRules } from '../../../models/battle-room.js';
+import { BATTLE_SERVICE, BATTLES_MESSAGES_SERVICE, OPEN_BATTLES_SERVICE } from '../../app/dependency-injection.js';
+import { AddPlayerRequest } from '../../../domain/battles/add-player-request.js';
 
 const _GET_ALL_QUERY = "SELECT * FROM battles";
 const _GET_BY_ID_QUERY = "SELECT * FROM battles WHERE id = ?";
@@ -16,31 +16,15 @@ export class MySqlBattleStore {
     constructor() {
     }
 
-    async connect() {
-        try {
-            this.connection = await mysql.createPool({
-                host: process.env.BATTLE_STORE_HOST,
-                user: process.env.BATTLE_STORE_USER,
-                password: process.env.BATTLE_STORE_PASSWORD,
-                database: process.env.BATTLE_STORE_DATABASE
-            });
-        } catch (err) {
-            console.log("Couldn't connect to database.");
-            console.log(err);
-        }
-    }
-
     async get(id) {
         let bigIntId = BigInt(id);
         if (this._rooms.has(bigIntId)) {
             return this._rooms.get(bigIntId);
         }
         else {
-            if (!this.connection) {
-                await this.connect();
-            }
+            const connection = await MySqlConnectionPool.connect();
             try {
-                const [results] = this.connection.query(_GET_BY_ID_QUERY, [id]);
+                const [results] = await connection.query(_GET_BY_ID_QUERY, [id]);
                 if (results && results.size > 0) {
                     for (let result of results) {
                         let wrapper = await parseBattleStringToJson(result);
@@ -48,11 +32,11 @@ export class MySqlBattleStore {
                         await startBattle(battle);
                         this._rooms.set(BigInt(battle.id), battle);
                         battle.archived = false;
-                        resolve(battle);
+                        return battle;
                     }
                 }
                 else {
-                    resolve(undefined);
+                    return undefined;
                 }
             } catch (err) {
                 console.log("Couldn't load stored battle data by ID.");
@@ -61,11 +45,9 @@ export class MySqlBattleStore {
     }
 
     async loadAll() {
-        if (!this.connection) {
-            await this.connect();
-        }
+        const connection = await MySqlConnectionPool.connect();
         try {
-            const [results] = await this.connection.query(_GET_ALL_QUERY);
+            const [results] = await connection.query(_GET_ALL_QUERY);
             for (let result of results) {
                 let wrapper = await parseBattleStringToJson(result);
                 let room = Object.assign(new BattleRoom, wrapper);
@@ -88,11 +70,9 @@ export class MySqlBattleStore {
     async create(room) {
         room.id = process.hrtime.bigint();
         let data = toJSON(new BattleRoomDataWrapper(room));
-        if (!this.connection) {
-            await this.connect();
-        }
+        const connection = await MySqlConnectionPool.connect();
         try {
-            await this.connection.query(_CREATE_QUERY, [room.id, data]);
+            await connection.query(_CREATE_QUERY, [room.id, data]);
         } catch (err) {
             console.log("Couldn't create battle room.");
             console.log(err);
@@ -110,10 +90,8 @@ export class MySqlBattleStore {
 
     async save(room) {
         let data = toJSON(new BattleRoomDataWrapper(room));
-        if (!this.connection) {
-            await this.connect();
-        }
-        await this.connection.query(_UPDATE_QUERY, [data, room.id]);
+        const connection = await MySqlConnectionPool.connect();
+        await connection.query(_UPDATE_QUERY, [data, room.id]);
         return room;
     }
 
@@ -123,10 +101,8 @@ export class MySqlBattleStore {
 
     async delete(room) {
         this._rooms.delete(room.id);
-        if (!this.connection) {
-            await this.connect();
-        }
-        await this.connection.query(_DELETE_QUERY, [room.id]);
+        const connection = await MySqlConnectionPool.connect();
+        await connection.query(_DELETE_QUERY, [room.id]);
         return room;
     }
 }
@@ -176,6 +152,7 @@ class BattleRoomDataWrapper {
     rules;
     trainers;
     archived;
+    consumerId;
 
     constructor(room) {
         if (room) {
@@ -190,6 +167,7 @@ class BattleRoomDataWrapper {
             this.rules = room.rules;
             this.trainers = room.trainers;
             this.archived = room.archived;
+            this.consumerId = room.consumerId;
         }
     }
 
@@ -202,6 +180,7 @@ class BattleRoomDataWrapper {
         room.rules = Object.assign(new BattleRules, this.rules);
         room.trainers = this.trainers; 
         room.archived = this.archived;
+        room.consumerId = this.consumerId;
         return room;
     }
 }

@@ -1,14 +1,16 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
 import * as ValidationRules from '../../../utils/validation-rules.js';
-import { BATTLE_ROOM_SERVICE, CONFIG_SERVICE } from '../../app/dependency-injection.js';
+import { BATTLE_ROOM_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
 import { BATTLE_THREAD_TAG } from "../../../constants.js";
 import { getInvalidChannelMessage } from "../discord-utils.js";
+import { DiscordConstants } from '../discord-constants.js';
 
 export const displayHelp = (req, res) => {
     return displayDiscordHelp(req, res);
 }
 
 async function displayDiscordHelp(req, res) {
+    const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
     if (ValidationRules.isBattleThread(channelName)) {
         const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
@@ -32,19 +34,23 @@ async function displayDiscordHelp(req, res) {
             }
         });
     }
-    else if (CONFIG_SERVICE.getBattleSearchChannelName() == channelName) {
-        let message = "**Battle Bot Help**\n";
-        message += "This is the \`battle-search\` channel.\n";
-        message += "Use \`/create-battle\` to create a battle.";
-        return res.send({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data: {
-                flags: InteractionResponseFlags.EPHEMERAL,
-                content: message
-            }
-        });
-    }
-    else {
-        return getInvalidChannelMessage(res);
+    else { 
+        let consumer = await CONSUMER_DATA.getByPlatformAndPlatformSpecificId(DiscordConstants.DISCORD_PLATFORM_NAME, guildId);
+        let battleSearchChannelName = await CONFIG_DATA.get(consumer.id, DiscordConstants.BATTLE_SEARCH_CHANNEL_NAME_PROPERTY_NAME);
+        if (channelName == battleSearchChannelName) {
+            let message = "**Battle Bot Help**\n";
+            message += "This is the \`battle-search\` channel.\n";
+            message += "Use \`/create-battle\` to create a battle.";
+            return res.send({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    flags: InteractionResponseFlags.EPHEMERAL,
+                    content: message
+                }
+            });
+        }
+        else {
+            return getInvalidChannelMessage(res);
+        }
     }
 }

@@ -1,10 +1,10 @@
-import { MySqlBattleStore } from "../data/mysql-battle-store.js";
+import { MySqlBattleStore } from "../data/mysql/mysql-battle-store.js";
+export * as CONFIG_DATA from "../data/mysql/mysql-consumer-properties-store.js";
+export * as CONSUMER_DATA from "../data/mysql/mysql-consumer-store.js";
 import { TestBattleStore } from "../data/test-battle-store.js";
-import * as config from "../../config.js";
 import { BattleRoomService } from "../../domain/battles/battle-room-service.js";
 export const BATTLE_ROOM_DATA = getBattleStore();
 export const BATTLE_ROOM_SERVICE = new BattleRoomService();
-export const CONFIG_SERVICE = config;
 
 export * as INACTIVE_BATTLES_JOB from "../discord/jobs/inactive-battles-job.js";
 export * as OPEN_BATTLES_SERVICE from "../discord/services/battles/open-battles-service.js";

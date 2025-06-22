@@ -50,7 +50,7 @@ export class ShowdownStreamWrapper {
                         }
                     }
                     else if (tokens.length > 1 && tokens[1] == 'win') {
-                        message = await this.doWin(tokens);
+                        message = await this.doWin(tokens[2]);
                     }
                     else {
                         message = this.flavorTextUtil.handleMessage(line);
@@ -83,12 +83,14 @@ export class ShowdownStreamWrapper {
             this._stream.write(">unmute");
             let showdownBattle = this._stream.battle;
 
-            if (showdownBattle.turn > 0) {
-                await BATTLES_MESSAGES_SERVICE.create(this._room, this.doTurn(showdownBattle.turn));
-            }
-            for (let request of showdownBattle.getRequests(showdownBattle.requestState)) {
-                this.doRequest(request);
-            }
+            if (!showdownBattle.ended) {
+                if (showdownBattle.turn > 0) {
+                    await BATTLES_MESSAGES_SERVICE.create(this._room, this.doTurn(showdownBattle.turn));
+                }
+                for (let request of showdownBattle.getRequests(showdownBattle.requestState)) {
+                    this.doRequest(request);
+                }
+            } 
         }
     }
 
@@ -330,28 +332,11 @@ export class ShowdownStreamWrapper {
         return message;
     }
 
-    async doWin(tokens) {
-        let trainer = tokens[2];
-        let message = `**${trainer} wins!**`;
-
-        // Output all rules
-
-
-        // Output each trainer and their Pokemon
-        /* e.g.
-        
-        Elrond wins and earns $4,000
-        Infernape, Raichu, Gliscor, Roserade, Espeon, Volcarona
-        
-        Trainer 2 loses and earns $2,000
-        Venusaur, Blastoise, Nidoking, Nidoqueen, Jynx, Gardevoir
-        */
-
-        // Output
-
-        await BATTLE_ROOM_SERVICE.endBattle(this._room.id);
+    async doWin(winnerName) {
+        await BATTLE_ROOM_SERVICE.completeBattle(this._room.id, winnerName);
         this._stream = undefined;
 
+        let message = `**${winnerName} wins!**`;
         return message;
     }
 }

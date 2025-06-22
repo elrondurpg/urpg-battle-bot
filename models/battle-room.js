@@ -9,6 +9,7 @@ import { capitalize } from "../utils.js";
 
 export class BattleRoom {
     options = {};
+    consumerId;
     id;
     ownerId;
     teams = [];
@@ -27,6 +28,23 @@ export class BattleRoom {
     getOpenRoomMessage() {
         let message = `Battle room created by <@${this.ownerId}>\n\n`;
         message += "**Rules**\n";
+        message += this.getRulesMessage();
+
+        let numPlayersNeeded = this.getNumPlayersNeeded();
+        if (numPlayersNeeded == 1) {
+            message += `\n\n**Looking for ${this.getNumPlayersNeeded()} opponent!**\n`;
+        }
+        else if (numPlayersNeeded > 1) {
+            message += `\n\n**Looking for ${this.getNumPlayersNeeded()} opponents!**\n`;
+        }
+        if (numPlayersNeeded > 0) {
+            message += "Use the \`/join\` command to join this battle.";
+        }
+        return message;
+    }
+
+    getRulesMessage() {
+        let message = "";
         let generation = capitalize(this.rules.generation);
         let sendType = capitalize(this.rules.sendType);
         let teamType = capitalize(this.rules.teamType);
@@ -56,16 +74,6 @@ export class BattleRoom {
             message += "\nRental Clause ON";
         }
 
-        let numPlayersNeeded = this.getNumPlayersNeeded();
-        if (numPlayersNeeded == 1) {
-            message += `\n\n**Looking for ${this.getNumPlayersNeeded()} opponent!**\n`;
-        }
-        else if (numPlayersNeeded > 1) {
-            message += `\n\n**Looking for ${this.getNumPlayersNeeded()} opponents!**\n`;
-        }
-        if (numPlayersNeeded > 0) {
-            message += "Use the \`/join\` command to join this battle.";
-        }
         return message;
     }
 

@@ -7,6 +7,7 @@ import { chooseSwitch } from "./choose-switch-service.js";
 import { addPlayer } from "./add-player-service.js";
 import { getStats } from "./get-stats-service.js";
 import { forfeit } from "./forfeit-service.js";
+import { completeBattle } from "./complete-battle-service.js";
 
 export class BattleRoomService {
 
@@ -16,44 +17,43 @@ export class BattleRoomService {
         }
     }
     
-    async addPlayer(battleId, trainerId, trainerName) {
-        return await addPlayer(battleId, trainerId, trainerName);
+    async addPlayer(roomId, trainerId, trainerName) {
+        return await addPlayer(roomId, trainerId, trainerName);
     }
 
-    async get(battleId) {
-        return await BATTLE_ROOM_DATA.get(battleId);
+    async get(roomId) {
+        return await BATTLE_ROOM_DATA.get(roomId);
     }
 
     async getAll() {
         return await BATTLE_ROOM_DATA.getAll();
     }
 
-    async endBattle(battleId) {
-        let battle = await BATTLE_ROOM_DATA.get(battleId);
-        await BATTLE_ROOM_DATA.delete(battle);
+    async completeBattle(roomId, winnerName) {
+        return await completeBattle(roomId, winnerName);
     }
 
-    async addPokemon(battleId, trainerId, pokemon) {
-        return await addPokemon(battleId, trainerId, pokemon);
+    async addPokemon(roomId, trainerId, pokemon) {
+        return await addPokemon(roomId, trainerId, pokemon);
     }
 
-    async chooseLead(battleId, trainerId, lead) {
-        return await chooseLead(battleId, trainerId, lead);
+    async chooseLead(roomId, trainerId, lead) {
+        return await chooseLead(roomId, trainerId, lead);
     }
 
-    async chooseMove(battleId, trainerId, request) {
-        return await chooseMove(battleId, trainerId, request);
+    async chooseMove(roomId, trainerId, request) {
+        return await chooseMove(roomId, trainerId, request);
     }
 
-    async chooseSwitch(battleId, trainerId, pokemonId) {
-        return await chooseSwitch(battleId, trainerId, pokemonId);
+    async chooseSwitch(roomId, trainerId, pokemonId) {
+        return await chooseSwitch(roomId, trainerId, pokemonId);
     }
 
-    async getStats(battleId, trainerId) {
-        return await getStats(battleId, trainerId);
+    async getStats(roomId, trainerId) {
+        return await getStats(roomId, trainerId);
     }
 
-    async forfeit(battleId, trainerId) {
-        return await forfeit(battleId, trainerId);
+    async forfeit(roomId, trainerId) {
+        return await forfeit(roomId, trainerId);
     }
 }
