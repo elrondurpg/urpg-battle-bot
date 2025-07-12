@@ -14,7 +14,7 @@ export async function completeBattle(roomId, winnerName) {
 
     const battle = await BATTLE_SERVICE.get(roomId);
 
-    let numFaintedPokemon = getGreatestNumFaintedPokemon(battle);
+    let numFaintedPokemon = getGreatestNumSentPokemon(battle);
 
     const winner = battle.trainers.find(trainer => trainer.name == winnerName);
     const winnerParticipant = buildParticipant(winner);
@@ -30,12 +30,12 @@ export async function completeBattle(roomId, winnerName) {
     await BATTLE_ROOM_DATA.delete(room);
 }
 
-function getGreatestNumFaintedPokemon(battle) {
-    return Math.max(...battle.trainers.map(trainer => getNumFaintedPokemon(trainer)));
+function getGreatestNumSentPokemon(battle) {
+    return Math.max(...battle.trainers.map(trainer => getNumSentPokemon(trainer)));
 }
 
-function getNumFaintedPokemon(trainer) {
-    return trainer.pokemon.filter(pokemon => pokemon.fainted).length;
+function getNumSentPokemon(trainer) {
+    return trainer.pokemon.filter(pokemon => pokemon.previouslySwitchedIn || pokemon.isActive).length;
 }
 
 function buildParticipant(participant) {
