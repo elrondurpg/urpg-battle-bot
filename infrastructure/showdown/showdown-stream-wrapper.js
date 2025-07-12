@@ -46,7 +46,7 @@ export class ShowdownStreamWrapper {
                     }
                     else if (tokens.length > 1 && tokens[1] == 'request') {
                         if (!tokens.includes("[silent]")) {
-                            this.doRequest(JSON.parse(tokens[2]));
+                            message = this.doRequest(JSON.parse(tokens[2]));
                         }
                     }
                     else if (tokens.length > 1 && tokens[1] == 'win') {
@@ -56,7 +56,6 @@ export class ShowdownStreamWrapper {
                         message = this.flavorTextUtil.handleMessage(line);
                     }
                     if (message && !tokens.includes("[silent]")) {
-                        //console.log(message);
                         await BATTLES_MESSAGES_SERVICE.create(this._room, message);
                     }
                 }
@@ -172,6 +171,7 @@ export class ShowdownStreamWrapper {
             }
             else if (request.forceSwitch && request.forceSwitch[0]) {
                 PLAYER_EXPECTED_ACTION_SERVICE.createSwitchExpectMessage(this._room, trainer.userId);
+                return this.doTurn(this._stream.battle.turn);
             }
             else if (request.teamPreview) {
                 PLAYER_EXPECTED_ACTION_SERVICE.createLeadExpectMessage(this._room, trainer.userId);
@@ -182,7 +182,7 @@ export class ShowdownStreamWrapper {
     doTurn(turnNumber) {
         let numBuffer = 50;
         let message = "```=";
-        let turnMarker = turnNumber == 1 ? "[Battle Start]" : `[End Turn ${turnNumber - 1}]`
+        let turnMarker = turnNumber == 1 ? "[Battle Start]" : `[Turn ${turnNumber}]`
         message += turnMarker;
         for (let i = 0; i < numBuffer - 1 - turnMarker.length; i++) {
             message += "=";

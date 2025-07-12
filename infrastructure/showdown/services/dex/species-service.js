@@ -46,35 +46,39 @@ function buildLearnset(species) {
     if (species.battleOnly != undefined) {
         tempSpecies = get(species.battleOnly);
     }
-    let learnset = Showdown.default.Dex.dataCache.Learnsets[tempSpecies.name.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()].learnset;
 
     let knownMoves = new Set();
-    if (learnset) {
-        knownMoves = [...knownMoves, ...Object.keys(learnset)];
-    }
-    if (tempSpecies.changesFrom) {
-        let changesFromSpecies = get(tempSpecies.changesFrom);
 
-        if (changesFromSpecies.learnset) {
-            knownMoves = [...knownMoves, ...Object.keys(changesFromSpecies.learnset)];
-            let currSpecies = changesFromSpecies;
+    let dexEntry = Showdown.default.Dex.dataCache.Learnsets[tempSpecies.name.replaceAll(/[^A-Za-z0-9]/g, "").toLowerCase()];
+    if (dexEntry) {
+        let learnset = dexEntry.learnset;
+        if (learnset) {
+            knownMoves = [...knownMoves, ...Object.keys(learnset)];
+        }
+        if (tempSpecies.changesFrom) {
+            let changesFromSpecies = get(tempSpecies.changesFrom);
+
+            if (changesFromSpecies.learnset) {
+                knownMoves = [...knownMoves, ...Object.keys(changesFromSpecies.learnset)];
+                let currSpecies = changesFromSpecies;
+                while (currSpecies.prevo) {
+                    let prevo = get(currSpecies.prevo);
+                    if (prevo.learnset) {
+                        knownMoves = [...knownMoves, ...Object.keys(prevo.learnset)];
+                    }
+                    currSpecies = prevo;
+                }
+            }
+        }
+        else {
+            let currSpecies = tempSpecies;
             while (currSpecies.prevo) {
                 let prevo = get(currSpecies.prevo);
-                if (prevo.learnset) {
+                if (prevo.learnset != undefined) {
                     knownMoves = [...knownMoves, ...Object.keys(prevo.learnset)];
                 }
                 currSpecies = prevo;
             }
-        }
-    }
-    else {
-        let currSpecies = tempSpecies;
-        while (currSpecies.prevo) {
-            let prevo = get(currSpecies.prevo);
-            if (prevo.learnset != undefined) {
-                knownMoves = [...knownMoves, ...Object.keys(prevo.learnset)];
-            }
-            currSpecies = prevo;
         }
     }
 

@@ -1,8 +1,8 @@
 import { InMemoryBattleStore } from "./in-memory-battle-store.js";
-import { BattleRoom } from "../../models/battle-room.js";
-import { BATTLE_SERVICE } from "../app/dependency-injection.js";
-import { AddPokemonRequest } from "../../domain/battles/add-pokemon-request.js";
-import { AddPlayerRequest } from "../../domain/battles/add-player-request.js";
+import { BattleRoom } from "../../../models/battle-room.js";
+import { BATTLE_SERVICE } from "../../app/dependency-injection.js";
+import { AddPokemonRequest } from "../../../domain/battles/add-pokemon-request.js";
+import { AddPlayerRequest } from "../../../domain/battles/add-player-request.js";
 
 export class TestBattleStore extends InMemoryBattleStore {
     constructor() {
@@ -13,9 +13,9 @@ export class TestBattleStore extends InMemoryBattleStore {
         let pokemon1 = new AddPokemonRequest();
         pokemon1.id = 1;
         pokemon1.nickname = undefined;
-        pokemon1.species = "vileplume";
+        pokemon1.species = "pikachurockstar";
         pokemon1.gender = "M";
-        pokemon1.ability = "chlorophyll";
+        pokemon1.ability = "static";
         pokemon1.item = 'firiumz';
         //pokemon1.teraType = "Fire";
         pokemon1.conversionType = "Ice";
@@ -56,11 +56,11 @@ export class TestBattleStore extends InMemoryBattleStore {
 
         let pokemon4 = new AddPokemonRequest();
         pokemon4.id = 1,
-        pokemon4.species = "dragonair";
+        pokemon4.species = "azumarill";
         pokemon4.gender = "m";
-        pokemon4.ability = "shedskin";
+        pokemon4.ability = "hugepower";
         pokemon4.hiddenPowerType = "ICE";
-        pokemon4.item = 'Leftovers';
+        pokemon4.item = 'stickybarb';
 
         let pokemon5 = new AddPokemonRequest();
         pokemon5.id = 2,
@@ -138,16 +138,25 @@ export class TestBattleStore extends InMemoryBattleStore {
         };
         this._battles.set(room.id, room);
 
+        /*let inputLog = [
+            '>start {"formatid":"[Gen 9] Custom Game","seed":"sodium,4bf713147a52194b51319a05b5ed31f9","rules":{"generation":"standard","battleType":"singles","numTeams":2,"numTrainersPerTeam":1,"numPokemonPerTrainer":3,"sendType":"private","teamType":"preview","startingWeather":null,"startingTerrain":null,"ohkoClause":true,"accClause":true,"evaClause":true,"sleepClause":true,"freezeClause":true,"speciesClause":true,"itemsAllowed":true,"itemClause":true,"megasAllowed":true,"zmovesAllowed":true,"dynamaxAllowed":true,"teraAllowed":true,"worldCoronationClause":true,"legendsAllowed":true,"randomClause":false,"inversionClause":false,"skyClause":false,"gameboyClause":false,"wonderLauncherClause":false,"rentalClause":true}}',
+            '>player p1 {"name":"Elrond","userId":"' + trainer1.id + '","team":"1|vileplume||firiumz|chlorophyll||Quirky|252,252,252,252,252,252|M||||,,,,,,Ice]2|roserade||leftovers|technician||Quirky|252,252,252,252,252,252|m||||,FIRE,,,,grass,]3|Churtle|squirtle|leftovers|torrent||Quirky|252,252,252,252,252,252|m||||,ELECTRIC,,,,water,"}',
+            '>player p2 {"name":"CPU1","userId":"' + trainer2.id + '","team":"1|dragonair||Leftovers|shedskin||Quirky|252,252,252,252,252,252|m||||,ICE,,,,,]2|pidove|||bigpecks||Quirky|252,252,252,252,252,252|M||||,FIGHTING,,,,,]3|kakuna||leftovers|shedskin||Quirky|252,252,252,252,252,252|M||||,FIRE,,,,,"}',
+            '>p1 team 1, 2, 3',
+            '>p2 team 1, 2, 3',
+        ]
+
+        room.options['inputLog'] = inputLog;*/
+
         await BATTLE_SERVICE.create(room);
         await BATTLE_SERVICE.chooseLead(room.id, trainer1.id, 1);
         await BATTLE_SERVICE.chooseLead(room.id, trainer2.id, 1);
-        await BATTLE_SERVICE.move(room.id, trainer1.id, 'mimic');
-        await BATTLE_SERVICE.move(room.id, trainer2.id, 'surf');
+        await BATTLE_SERVICE.move(room.id, trainer1.id, 'wish');
+        await BATTLE_SERVICE.move(room.id, trainer2.id, 'bellydrum');
         let numLoops = 0;
         for (let i = 0; i < numLoops; i++) {
             await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');
             await BATTLE_SERVICE.move(room.id, trainer2.id, 'doubleteam');
         }
-
     }
 }

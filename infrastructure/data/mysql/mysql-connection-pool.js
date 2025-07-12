@@ -19,7 +19,8 @@ async function tryConnect() {
             password: process.env.BATTLE_STORE_PASSWORD,
             database: process.env.BATTLE_STORE_DATABASE,
             supportBigNumbers: true,
-            bigNumberStrings: true
+            bigNumberStrings: true,
+            charset: 'utf8mb4'
         });
         return _connection;
     } catch (err) {

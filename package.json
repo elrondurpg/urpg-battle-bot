@@ -1,7 +1,7 @@
 {
   "name": "urpg-battle-bot",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Discord bot for Pokémon battle simulator for Pokémon Ultra RPG.",
   "main": "urpg-battle-bot-app.js",
   "type": "module",

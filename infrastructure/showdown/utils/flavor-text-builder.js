@@ -20,6 +20,8 @@ export class FlavorTextBuilder {
     outputmove;
     type;
     upkeep;
+    oldActive;
+    oldActiveHp;
 
     constructor(action) {
         this.action = action;
@@ -30,9 +32,14 @@ export class FlavorTextBuilder {
             this.stat = action.stat;
         }
         if (action.fromItem || (action.tokens.some(token => token.includes("[from] item: ")))) {
-            let itemActions = ["start", "end", "activate"];
+            let itemActions = ["start", "end", "activate", "damage"];
             if (itemActions.includes(this.action.replaceAll("-", ""))) {
-                this.action += "FromItem";
+                if (action.tokens.some(token => token.includes("[of] "))) {
+                    this.action += "FromPokemon";
+                }
+                else {
+                    this.action += "FromItem";
+                }
             }
         }
         if (action.weak || (action.tokens.some(token => token.includes("[weak]")))) {
@@ -124,6 +131,16 @@ export class FlavorTextBuilder {
 
     setType(type) {
         this.type = type;
+        return this;
+    }
+
+    setOldActive(oldActive) {
+        this.oldActive = oldActive;
+        return this;
+    }
+
+    setOldActiveHp(oldActiveHp) {
+        this.oldActiveHp = oldActiveHp;
         return this;
     }
 
@@ -348,6 +365,12 @@ export class FlavorTextBuilder {
             }
             if (this.type) {
                 message = message.replaceAll("[TYPE]", this.type);
+            }
+            let isSwitch = (this.action == "switchIn" || this.action == "drag");
+            let hasOldActive = this.oldActive && this.oldActiveHp;
+            if (isSwitch && hasOldActive && !this.oldActiveHp.includes('fnt')) {
+                message += "\n";
+                message += `*(${this.oldActive} out at ${this.oldActiveHp}%)*`;
             }
             return message.trim();
         }

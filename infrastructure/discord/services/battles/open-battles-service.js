@@ -12,7 +12,7 @@ export async function init(rooms) {
     for (let room of rooms) {
         if (room.getNumPlayersNeeded() > 0) {
             let consumerId = room.consumerId;
-            consumerId.add(consumerId);
+            consumerIds.add(consumerId);
 
             if (!_openBattlesByConsumerId.get(consumerId)) {
                 _openBattlesByConsumerId.set(consumerId, []);

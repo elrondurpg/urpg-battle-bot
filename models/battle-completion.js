@@ -17,4 +17,6 @@ export class BattlePokemon {
     nickname;
     species;
     gender;
+    fainted;
+    sent;
 }

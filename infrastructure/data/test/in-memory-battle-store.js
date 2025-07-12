@@ -1,4 +1,4 @@
-import { BattleIdCollisionError } from "../../models/battle-room.js";
+import { BattleIdCollisionError } from "../../../models/battle-room.js";
 
 export class InMemoryBattleStore {
     _battles = new Map();

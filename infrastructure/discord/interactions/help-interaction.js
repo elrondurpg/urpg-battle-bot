@@ -1,7 +1,5 @@
 import { InteractionResponseFlags, InteractionResponseType } from "discord-interactions";
-import * as ValidationRules from '../../../utils/validation-rules.js';
 import { BATTLE_ROOM_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
-import { BATTLE_THREAD_TAG } from "../../../constants.js";
 import { getInvalidChannelMessage } from "../discord-utils.js";
 import { DiscordConstants } from '../discord-constants.js';
 
@@ -12,8 +10,12 @@ export const displayHelp = (req, res) => {
 async function displayDiscordHelp(req, res) {
     const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
-    if (ValidationRules.isBattleThread(channelName)) {
-        const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
+
+    let consumer = await CONSUMER_DATA.getByPlatformAndPlatformSpecificId(DiscordConstants.DISCORD_PLATFORM_NAME, guildId);
+    let battleThreadTag = await CONFIG_DATA.get(consumer.id, DiscordConstants.BATTLE_THREAD_TAG_PROPERTY_NAME);
+
+    if (channelName.substr(0, battleThreadTag.length) === battleThreadTag) {
+        const battleId = String(channelName).slice(battleThreadTag.length);
         await BATTLE_ROOM_SERVICE.get(battleId);
         let message = "**Battle Bot Help**\n";
         message += "This is a battle thread.\n";

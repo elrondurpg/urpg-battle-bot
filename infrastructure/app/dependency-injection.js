@@ -1,7 +1,14 @@
 import { MySqlBattleStore } from "../data/mysql/mysql-battle-store.js";
-export * as CONFIG_DATA from "../data/mysql/mysql-consumer-properties-store.js";
-export * as CONSUMER_DATA from "../data/mysql/mysql-consumer-store.js";
-import { TestBattleStore } from "../data/test-battle-store.js";
+
+import * as MYSQL_CONFIG_DATA from "../data/mysql/mysql-consumer-properties-store.js";
+import { TestConsumerPropertiesStore } from "../data/test/test-consumer-properties-store.js";
+export const CONFIG_DATA = process.env.USE_TEST_DATA === 'true' ? new TestConsumerPropertiesStore() : MYSQL_CONFIG_DATA;
+
+import * as MYSQL_CONSUMER_DATA from "../data/mysql/mysql-consumer-store.js";
+import { TestConsumerStore } from "../data/test/test-consumer-store.js";
+export const CONSUMER_DATA = process.env.USE_TEST_DATA === 'true' ? new TestConsumerStore() : MYSQL_CONSUMER_DATA;
+
+import { TestBattleStore } from "../data/test/test-battle-store.js";
 import { BattleRoomService } from "../../domain/battles/battle-room-service.js";
 export const BATTLE_ROOM_DATA = getBattleStore();
 export const BATTLE_ROOM_SERVICE = new BattleRoomService();
@@ -40,7 +47,6 @@ export * as ABILITY_SERVICE from "../showdown/services/dex/ability-service.js";
 export * as ITEM_SERVICE from "../showdown/services/dex/item-service.js";
 export * as MOVE_SERVICE from "../showdown/services/dex/move-service.js";
 export * as TYPE_SERVICE from "../showdown/services/dex/type-service.js";
-export * as BATTLES_POKEMON_SERVICE from "../showdown/services/battles/pokemon/pokemon-service.js";
 
 function getBattleStore() {
     if (process.env.USE_TEST_DATA === 'true') {

@@ -1,4 +1,4 @@
-import { BATTLE_ROOM_DATA, BATTLES_POKEMON_SERVICE } from "../../infrastructure/app/dependency-injection.js";
+import { BATTLE_ROOM_DATA, BATTLE_SERVICE } from "../../infrastructure/app/dependency-injection.js";
 import * as BATTLE_ROOM_VALIDATOR from "./battle-validations.js";
 
 export async function getStats(roomId, trainerId) {
@@ -8,10 +8,11 @@ export async function getStats(roomId, trainerId) {
     BATTLE_ROOM_VALIDATOR.validateBattleRoom(room);
     BATTLE_ROOM_VALIDATOR.validateBattleRoomHasTrainer(room, trainerId);
 
-    let trainer = room.trainers.get(trainerId);
-    message += getTrainerStats(room, trainer);
+    let battle = await BATTLE_SERVICE.get(roomId);
+    let trainer = battle.trainers.find(trainer => trainer.id = trainerId);
+    message += getTrainerStats(trainer);
 
-    Array.from(room.trainers.values())
+    Array.from(battle.trainers.values())
         .filter(opponent => opponent.id != trainerId)
         .sort((a, b) => a.name < b.name ? -1 : 1)
         .forEach(opponent => message += getOpponentStats(room, opponent));
@@ -21,7 +22,7 @@ export async function getStats(roomId, trainerId) {
 
 function getOpponentStats(room, trainer) {
     let message = `**${trainer.name}'s Team**\n\`\`\``;
-    let team = BATTLES_POKEMON_SERVICE.get(room.id, trainer.id);
+    let team = Array.from(trainer.pokemon.values());
 
     let teamType = room.rules.teamType.toLowerCase();
 
@@ -39,9 +40,9 @@ function getOpponentStats(room, trainer) {
     return message + "\`\`\`";
 }
 
-function getTrainerStats(room, trainer) {
+function getTrainerStats(trainer) {
     let message = `**${trainer.name}'s Team**\n\`\`\``;
-    let team = BATTLES_POKEMON_SERVICE.get(room.id, trainer.id);
+    let team = Array.from(trainer.pokemon.values());
 
     let activePokemon = team.filter(pokemon => pokemon.isActive);
     if (activePokemon) {
@@ -54,7 +55,7 @@ function getTrainerStats(room, trainer) {
     }
 
     let benchedPokemon = team.filter(pokemon => !pokemon.isActive);
-    if (benchedPokemon) {
+    if (benchedPokemon && benchedPokemon.length > 0) {
         message += "Benched Pokémon\n";
         message += "---------------\n";
 
@@ -75,7 +76,7 @@ function shouldDisplayBenchedPokemon(pokemon) {
         return false;
     }
     else {
-        return pokemon.previouslySwitchedIn || pokemon.revealed;
+        return pokemon.isActive || pokemon.previouslySwitchedIn || pokemon.revealed;
     } 
 }
 
@@ -98,7 +99,7 @@ function getPokemonFullStats(pokemon) {
     message += getPokemonDisplayName(pokemon);
 
     message += `, ${pokemon.ability}`;
-    message += `${pokemon.item != undefined ? ` @ ${pokemon.item}` : ""}`;
+    message += `${pokemon.item ? ` @ ${pokemon.item}` : ""}`;
 
     if (!pokemon.fainted) {
         let hpPercent = (pokemon.hp / pokemon.maxhp * 100).toFixed(2) + '%';

@@ -1,7 +1,8 @@
 import { Battle } from "../../../../models/battle.js";
+import { Pokemon } from "../../../../models/pokemon.js";
 import { Trainer } from "../../../../models/trainer.js";
 import { BadRequestError } from "../../../../utils/bad-request-error.js";
-import { BATTLES_POKEMON_SERVICE } from "../../../app/dependency-injection.js";
+import { ABILITY_SERVICE, ITEM_SERVICE, TYPE_SERVICE } from "../../../app/dependency-injection.js";
 import { ShowdownStreamWrapper } from "../../showdown-stream-wrapper.js";
 
 const _streams = new Map();
@@ -74,7 +75,7 @@ function buildResponse(battle) {
 function buildTrainer(side) {
     let trainer = new Trainer();
     trainer.id = side.userId;
-    trainer.pokemon = side.pokemon.map(pokemon => BATTLES_POKEMON_SERVICE.build(pokemon));
+    trainer.pokemon = side.pokemon.map(pokemon => buildPokemon(pokemon));
     trainer.active = trainer.pokemon.filter(pokemon => pokemon.isActive);
     trainer.zMoveUsed = side.zMoveUsed;
     trainer.dynamaxUsed = side.dynamaxUsed;
@@ -105,4 +106,52 @@ function buildAwaitingChoice(request) {
             };
         }
     }
+}
+
+function buildPokemon(pokemon) {
+    let response = new Pokemon();
+    response.id = pokemon.id;
+    response.name = pokemon.name;
+    response.isActive = pokemon.isActive;
+    response.illusion = pokemon.illusion;
+    response.illusionRevealed = pokemon.illusionRevealed;
+    response.revealed = pokemon.revealed;
+    response.previouslySwitchedIn = pokemon.previouslySwitchedIn;
+    response.lastIllusion = pokemon.lastIllusion;
+    response.species = pokemon.species.name;
+    response.baseSpecies = pokemon.species.baseSpecies;
+    response.originalSpecies = pokemon.baseSpecies.name;
+    response.gender = pokemon.gender;
+    response.ability = ABILITY_SERVICE.get(pokemon.ability).name;
+    response.item = ITEM_SERVICE.get(pokemon.item).name;
+    response.hp = pokemon.hp;
+    response.maxhp = pokemon.maxhp;
+    response.boosts = pokemon.boosts;
+    response.status = pokemon.status;
+    response.volatiles = pokemon.volatiles;
+    response.terastallized = pokemon.terastallized;
+    response.hpType = TYPE_SERVICE.get(pokemon.hpType).name;
+    response.teraType = TYPE_SERVICE.get(pokemon.teraType).name;
+    response.conversionType = TYPE_SERVICE.get(pokemon.conversionType).name;
+    response.useGmaxForm = pokemon.useGmaxForm;
+    response.fainted = pokemon.fainted;
+    response.moves = pokemon.getMoves().map(move => ({
+        id: move.id,
+        name: move.move,
+        disabled: move.disabled
+    }));
+    response.volatiles = pokemon.volatiles;
+    response.zMoves = pokemon.battle.actions.canZMove(pokemon);
+    response.canDynamaxNow = pokemon.getDynamaxRequest(false);
+    if (pokemon.lastMove) {
+        response.lastMove = {
+            id: pokemon.lastMove.id,
+            name: pokemon.lastMove.name,
+            isZ: pokemon.lastMove.isZ
+        };
+    }
+    response.canUltraBurst = pokemon.canUltraBurst;
+    response.canMegaEvo = pokemon.canMegaEvo;
+    response.trapped = pokemon.trapped;
+    return response;
 }

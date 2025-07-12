@@ -69,6 +69,8 @@ function buildTeamMessage(participant) {
             message += pokemon.nickname + " the ";
         }
         message += pokemon.species + " " + pokemon.gender;
+        message += pokemon.fainted ? " [FNT]" : '';
+        message += pokemon.sent ? '' : " (Unsent)";
         if (i < participant.pokemon.length - 1) {
             message += ", ";
         }

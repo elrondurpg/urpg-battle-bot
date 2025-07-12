@@ -236,7 +236,9 @@ export class FlavorTextUtility {
         let tokens = action.tokens;
         action.setPokemon(tokens[2])
             .setDetails(tokens[3])
-            .setHpStatus(tokens[4]);
+            .setHpStatus(tokens[4])
+            .setOldActive(tokens.length > 5 ? tokens[5] : null)
+            .setOldActiveHp(tokens.length > 6 ? tokens[6] : null);
 
         let trainer = this.stream.battle.sides.find(trainer => trainer.id == action.getPokemonOwner());
 
@@ -244,6 +246,8 @@ export class FlavorTextUtility {
             .from(action)
             .setTrainer(trainer.name)
             .setPokemon(action.getPokemonName())
+            .setOldActive(action.oldActive)
+            .setOldActiveHp(action.oldActiveHp)
             .build();
     }
 

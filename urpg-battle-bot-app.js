@@ -5,6 +5,7 @@ import { registerJobs } from './infrastructure/app/jobs.js';
 import { registerResources } from './infrastructure/app/resources.js';
 import { registerSignals } from './infrastructure/app/signals.js';
 import { BATTLE_ROOM_DATA } from './infrastructure/app/dependency-injection.js';
+import { DISCORD_REF_LOG_SERVICE } from './infrastructure/discord/services/guilds/discord-ref-log-service.js';
 
 const app = express();
 

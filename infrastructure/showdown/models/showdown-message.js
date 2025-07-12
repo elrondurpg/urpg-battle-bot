@@ -5,6 +5,7 @@ const pokemonNameRegex = /p\d+[a-z]*: (.+)/;
 const hpRegex = /(\d+\/\d+)\s*.*/;
 const statusRegex = /\d+\/\d+\s*(.*)/;
 const trainerRegex = /p\d+: (.+)/;
+const oldActiveRegex = /\[out\] (.+)/;
 
 export class ShowdownMessage {
     tokens;
@@ -36,6 +37,8 @@ export class ShowdownMessage {
     fromItem = false;
     zeffect = false;
     type;
+    oldActive;
+    oldActiveHp;
 
     constructor(tokens) {
         this.tokens = tokens;
@@ -284,5 +287,19 @@ export class ShowdownMessage {
         else if (this.hpStatus) {
             return statusRegex.exec(this.hpStatus)[1];
         }
+    }
+
+    setOldActive(oldActive) {
+        if (oldActive && oldActive.match(oldActiveRegex)) {
+            this.oldActive = oldActiveRegex.exec(oldActive)[1];
+        }
+        return this;
+    }
+
+    setOldActiveHp(oldActiveHp) {
+        if (oldActiveHp) {
+            this.oldActiveHp = oldActiveHp.replaceAll("/100", "");
+        }
+        return this;
     }
 }

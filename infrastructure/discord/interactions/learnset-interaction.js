@@ -1,9 +1,8 @@
 import { InteractionResponseFlags, InteractionResponseType, MessageComponentTypes } from "discord-interactions";
-import { BATTLE_THREAD_TAG } from "../../../constants.js";
-import { BATTLE_ROOM_SERVICE, BATTLE_SERVICE } from '../../app/dependency-injection.js';
-import * as ValidationRules from '../../../utils/validation-rules.js';
+import { BATTLE_ROOM_SERVICE, BATTLE_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
 import { BadRequestError } from "../../../utils/bad-request-error.js";
 import { getInvalidChannelMessage, getPokemonChoices } from "../discord-utils.js";
+import { DiscordConstants } from "../discord-constants.js";
 
 export const choosePokemonForLearnset = (req, res) => {
     return choosePokemonForDiscordLearnset(req, res);
@@ -16,17 +15,22 @@ export const displayLearnset = (req, res) => {
 async function choosePokemonForDiscordLearnset(req, res) {
     const context = req.body.context;
     const userId = context === 0 ? req.body.member.user.id : req.body.user.id;
-
+    
+    const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
-    if (!ValidationRules.isBattleThread(channelName)) {
+
+    let consumer = await CONSUMER_DATA.getByPlatformAndPlatformSpecificId(DiscordConstants.DISCORD_PLATFORM_NAME, guildId);
+    let battleThreadTag = await CONFIG_DATA.get(consumer.id, DiscordConstants.BATTLE_THREAD_TAG_PROPERTY_NAME);
+
+    if (channelName.substr(0, battleThreadTag.length) !== battleThreadTag) {
         return getInvalidChannelMessage(res);
     }
 
-    const battleId = String(channelName).slice(BATTLE_THREAD_TAG.length);
+    const roomId = String(channelName).slice(battleThreadTag.length);
     try {
-        let battle = await BATTLE_ROOM_SERVICE.get(battleId);
+        let battle = await BATTLE_ROOM_SERVICE.get(roomId);
         if (battle) {
-            let pokemonById = getPokemonChoices(battleId, userId);
+            let pokemonById = getPokemonChoices(roomId, userId);
             let options = [];
             for (let [key, value] of pokemonById) {
                 let option = {
@@ -47,7 +51,7 @@ async function choosePokemonForDiscordLearnset(req, res) {
                             components: [
                                 {
                                     type: MessageComponentTypes.STRING_SELECT,
-                                    custom_id: `msg_learnset_choice_${battleId}_${userId}`,
+                                    custom_id: `msg_learnset_choice_${roomId}_${userId}`,
                                     options: options,
                                 },
                             ],
@@ -78,9 +82,14 @@ async function choosePokemonForDiscordLearnset(req, res) {
 
 async function displayDiscordLearnset(req, res) {
     const { data } = req.body;
-
+    
+    const guildId = req.body.guild_id;
     const channelName = req.body.channel.name;
-    if (!ValidationRules.isBattleThread(channelName)) {
+
+    let consumer = await CONSUMER_DATA.getByPlatformAndPlatformSpecificId(DiscordConstants.DISCORD_PLATFORM_NAME, guildId);
+    let battleThreadTag = await CONFIG_DATA.get(consumer.id, DiscordConstants.BATTLE_THREAD_TAG_PROPERTY_NAME);
+
+    if (channelName.substr(0, battleThreadTag.length) !== battleThreadTag) {
         return getInvalidChannelMessage(res);
     }
 
@@ -122,5 +131,5 @@ function getPokemonLearnset(battleId, trainerId, pokemonId) {
             message += `${pokemon.name} the `
         }
         message += `**${pokemon.species}'s Moves**\n`;
-        return message + "\`\`\`" + pokemon.moves.map(move => move.name).sort().join(", ") + "\`\`\`\n";
+        return message + "\`\`\`" + pokemon.moves.map(move => move.name.trim()).sort().join(", ") + "\`\`\`\n";
 }

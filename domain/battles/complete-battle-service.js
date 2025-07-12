@@ -14,18 +14,28 @@ export async function completeBattle(roomId, winnerName) {
 
     const battle = await BATTLE_SERVICE.get(roomId);
 
+    let numFaintedPokemon = getGreatestNumFaintedPokemon(battle);
+
     const winner = battle.trainers.find(trainer => trainer.name == winnerName);
     const winnerParticipant = buildParticipant(winner);
-    winnerParticipant.payment = getWinnerPayment(room.rules.numPokemonPerTrainer);
+    winnerParticipant.payment = getWinnerPayment(numFaintedPokemon);
     completion.winners = [ winnerParticipant ];
 
     const loser = battle.trainers.find(trainer => trainer.name != winnerName);
     const loserParticipant = buildParticipant(loser);
-    loserParticipant.payment = getLoserPayment(room.rules.numPokemonPerTrainer);
+    loserParticipant.payment = getLoserPayment(numFaintedPokemon);
     completion.losers = [ loserParticipant ];
 
     PRESENTATION_SERVICE.doWin(completion);
     await BATTLE_ROOM_DATA.delete(room);
+}
+
+function getGreatestNumFaintedPokemon(battle) {
+    return Math.max(...battle.trainers.map(trainer => getNumFaintedPokemon(trainer)));
+}
+
+function getNumFaintedPokemon(trainer) {
+    return trainer.pokemon.filter(pokemon => pokemon.fainted).length;
 }
 
 function buildParticipant(participant) {
@@ -46,6 +56,8 @@ function buildPokemon(pokemon) {
     }
     battlePokemon.species = pokemon.originalSpecies;
     battlePokemon.gender = pokemon.gender;
+    battlePokemon.fainted = pokemon.fainted;
+    battlePokemon.sent = pokemon.previouslySwitchedIn || pokemon.isActive;
     return battlePokemon;
 }
 
