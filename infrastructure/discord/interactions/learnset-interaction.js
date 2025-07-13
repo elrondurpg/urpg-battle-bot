@@ -1,7 +1,7 @@
 import { InteractionResponseFlags, InteractionResponseType, MessageComponentTypes } from "discord-interactions";
 import { BATTLE_ROOM_SERVICE, BATTLE_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
 import { BadRequestError } from "../../../utils/bad-request-error.js";
-import { getInvalidChannelMessage, getPokemonChoices } from "../discord-utils.js";
+import { getInvalidChannelMessage, getPokemonChoicesById } from "../discord-utils.js";
 import { DiscordConstants } from "../discord-constants.js";
 
 export const choosePokemonForLearnset = (req, res) => {
@@ -30,7 +30,7 @@ async function choosePokemonForDiscordLearnset(req, res) {
     try {
         let battle = await BATTLE_ROOM_SERVICE.get(roomId);
         if (battle) {
-            let pokemonById = getPokemonChoices(roomId, userId);
+            let pokemonById = getPokemonChoicesById(roomId, userId);
             let options = [];
             for (let [key, value] of pokemonById) {
                 let option = {

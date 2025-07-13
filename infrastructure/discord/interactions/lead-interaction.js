@@ -1,7 +1,7 @@
 import { InteractionResponseFlags, InteractionResponseType, MessageComponentTypes } from "discord-interactions";
 import { BATTLE_ROOM_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
 import { BadRequestError } from "../../../utils/bad-request-error.js";
-import { getInvalidChannelMessage, getPokemonChoices } from "../discord-utils.js";
+import { getInvalidChannelMessage, getPokemonChoicesByPosition } from "../discord-utils.js";
 import { DiscordConstants } from "../discord-constants.js";
 
 export const sendLeadOptions = (req, res) => {
@@ -28,7 +28,7 @@ async function sendDiscordLeadOptions(req, res) {
     }
 
     try {
-        let pokemonById = getPokemonChoices(roomId, userId);
+        let pokemonById = getPokemonChoicesByPosition(roomId, userId);
         let options = [];
         for (let [key, value] of pokemonById) {
             let option = {

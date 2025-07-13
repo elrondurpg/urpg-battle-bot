@@ -1,7 +1,7 @@
 import { InteractionResponseFlags, InteractionResponseType, MessageComponentTypes } from "discord-interactions";
 import { BATTLE_ROOM_SERVICE, CONFIG_DATA, CONSUMER_DATA } from '../../app/dependency-injection.js';
 import { BadRequestError } from "../../../utils/bad-request-error.js";
-import { getInvalidChannelMessage, getPokemonChoices } from "../discord-utils.js";
+import { getInvalidChannelMessage, getPokemonChoicesByPosition } from "../discord-utils.js";
 import { DiscordConstants } from "../discord-constants.js";
 
 export const switchPokemon = (req, res) => {
@@ -30,7 +30,7 @@ async function switchDiscordPokemon(req, res) {
     try {
         let room = await BATTLE_ROOM_SERVICE.get(roomId);
         if (room) {
-            let pokemonById = getPokemonChoices(roomId, userId, (pokemon => !pokemon.isActive && !pokemon.fainted));
+            let pokemonById = getPokemonChoicesByPosition(roomId, userId, (pokemon => !pokemon.isActive && !pokemon.fainted));
             let options = [];
             for (let [key, value] of pokemonById) {
                 let option = {
