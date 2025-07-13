@@ -368,7 +368,7 @@ export class FlavorTextBuilder {
             }
             let isSwitch = (this.action == "switchIn" || this.action == "drag");
             let hasOldActive = this.oldActive && this.oldActiveHp;
-            if (isSwitch && hasOldActive && !this.oldActiveHp.includes('fnt')) {
+            if (isSwitch && hasOldActive && this.oldActiveHp > 0) {
                 message += "\n";
                 message += `*(${this.oldActive} out at ${this.oldActiveHp}%)*`;
             }

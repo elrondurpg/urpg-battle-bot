@@ -6,6 +6,7 @@ const hpRegex = /(\d+\/\d+)\s*.*/;
 const statusRegex = /\d+\/\d+\s*(.*)/;
 const trainerRegex = /p\d+: (.+)/;
 const oldActiveRegex = /\[out\] (.+)/;
+const oldActiveHpRegex = /([0-9\.]+) .*/;
 
 export class ShowdownMessage {
     tokens;
@@ -299,6 +300,9 @@ export class ShowdownMessage {
     setOldActiveHp(oldActiveHp) {
         if (oldActiveHp) {
             this.oldActiveHp = oldActiveHp.replaceAll("/100", "");
+            if (oldActiveHp.match(oldActiveHpRegex)) {
+                this.oldActiveHp = oldActiveHpRegex.exec(this.oldActiveHp)[1];
+            }
         }
         return this;
     }
