@@ -9,7 +9,7 @@ export async function getStats(roomId, trainerId) {
     BATTLE_ROOM_VALIDATOR.validateBattleRoomHasTrainer(room, trainerId);
 
     let battle = await BATTLE_SERVICE.get(roomId);
-    let trainer = battle.trainers.find(trainer => trainer.id = trainerId);
+    let trainer = battle.trainers.find(trainer => trainer.id == trainerId);
     message += getTrainerStats(trainer);
 
     Array.from(battle.trainers.values())

@@ -189,8 +189,8 @@ export class ShowdownStreamWrapper {
         }
         message += "\n";
 
-        let first = true;
-        for (let trainer of this._stream.battle.sides) {           
+        for (let trainer of this._stream.battle.sides) {      
+            let first = true;     
             message += `${trainer.name}: `;
             let activePokemon = trainer.active[0];
             if (activePokemon) {
