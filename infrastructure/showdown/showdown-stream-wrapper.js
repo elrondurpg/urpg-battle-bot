@@ -189,6 +189,7 @@ export class ShowdownStreamWrapper {
         }
         message += "\n";
 
+        let first = true;
         for (let trainer of this._stream.battle.sides) {           
             message += `${trainer.name}: `;
             let activePokemon = trainer.active[0];
@@ -224,7 +225,6 @@ export class ShowdownStreamWrapper {
                 let hpPercent = (activePokemon.hp / activePokemon.maxhp * 100).toFixed(2) + '%';
                 message += ` ${hpPercent}`;
 
-                let first = true;
                 let boostOrder = [ "atk", "def", "spa", "spd", "spe", "accuracy", "evasion" ];
                 let boosts = Array.from(Object.keys(activePokemon.boosts).sort((a, b) => {
                     return boostOrder.indexOf(a) - boostOrder.indexOf(b);

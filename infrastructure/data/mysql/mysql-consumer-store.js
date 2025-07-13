@@ -2,7 +2,7 @@ import * as MySqlConnectionPool from './mysql-connection-pool.js';
 import { Consumer } from '../../../models/consumer.js';
 
 const _GET_CONSUMER_BY_ID_QUERY = "SELECT c.*, p.name platform FROM consumers c join platforms p on c.platform_id = p.id WHERE c.id = ?";
-const _GET_CONSUMER_BY_PLATFORM_AND_PLATFORM_SPECIFIC_ID_QUERY = "SELECT * FROM consumers c join platforms p on c.platform_id = p.id WHERE p.name = ? AND c.platform_specific_id = ?";
+const _GET_CONSUMER_BY_PLATFORM_AND_PLATFORM_SPECIFIC_ID_QUERY = "SELECT c.id, platform_id, platform_specific_id, num_completed_battles, p.name platform FROM consumers c join platforms p on c.platform_id = p.id WHERE p.name = ? AND c.platform_specific_id = ?";
 const _INCREMENT_CONSUMER_NUM_COMPLETED_BATTLES_QUERY = "UPDATE consumers SET num_completed_battles = num_completed_battles + 1 WHERE id = ?";
 
 export async function getById(consumerId) {
