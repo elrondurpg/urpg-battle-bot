@@ -38,7 +38,9 @@ export async function addPokemon(battleId, trainerId, pokemon) {
 
     if (pokemon.hiddenPowerType) {
         validateHiddenPowerType(pokemon.hiddenPowerType);
-        pokemon.hiddenPowerType = pokemon.hiddenPowerType.toUpperCase();
+        const id = pokemon.hiddenPowerType.toLowerCase();
+		const typeName = id.charAt(0).toUpperCase() + id.substr(1);
+        pokemon.hiddenPowerType = typeName;
     }
 
     if (pokemon.item) {

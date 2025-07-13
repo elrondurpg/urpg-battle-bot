@@ -49,7 +49,7 @@ export function getPokemonChoices(battleId, trainerId, filterCallback) {
               label += `${pkmn.gender ? " " + pkmn.gender : ""}, `;
               label += `${pkmn.ability}`;
               label += `${pkmn.item ? ` @ ${pkmn.item}` : ""}`;
-              slots.set(positionsByPokemonId.get(pkmn.id), label);
+              slots.set(pkmn.id, label);
           }
           return slots;
       }
