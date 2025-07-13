@@ -54,6 +54,9 @@ export class BattleRoom {
         if (this.rules.itemsAllowed) {
             message += "Helds ON\n";
         }
+        else {
+            message += "Helds OFF\n";
+        }
 
         let simpleClauseMessage = getSimpleClauseMessage(this.rules);
         if (simpleClauseMessage != undefined) {
