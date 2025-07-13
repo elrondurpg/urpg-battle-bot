@@ -197,7 +197,7 @@ function isAbilityValidForSpecies(ability, species) {
 
 function validateHiddenPowerType(typeName) {
     let type = TYPE_SERVICE.get(typeName);
-    if (INVALID_HP_TYPES.includes(hiddenPowerType.toLowerCase())) {
+    if (INVALID_HP_TYPES.includes(typeName.toLowerCase())) {
         throw new BadRequestError(`Hidden Power type ${typeName} does not exist!`);
     }
 }
