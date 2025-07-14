@@ -21,7 +21,7 @@ export async function getStats(roomId, trainerId) {
 }
 
 function getOpponentStats(room, trainer) {
-    let message = `**${trainer.name}'s Team**\n\`\`\``;
+    let message = `**${trainer.name}'s Team**\n\`\`\`\n`;
     let team = Array.from(trainer.pokemon.values());
 
     let teamType = room.rules.teamType.toLowerCase();
