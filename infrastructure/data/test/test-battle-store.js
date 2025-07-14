@@ -13,9 +13,9 @@ export class TestBattleStore extends InMemoryBattleStore {
         let pokemon1 = new AddPokemonRequest();
         pokemon1.id = 1;
         pokemon1.nickname = undefined;
-        pokemon1.species = "pikachurockstar";
+        pokemon1.species = "garchomp";
         pokemon1.gender = "M";
-        pokemon1.ability = "static";
+        pokemon1.ability = "roughskin";
         pokemon1.item = 'firiumz';
         //pokemon1.teraType = "Fire";
         pokemon1.conversionType = "Ice";
@@ -56,9 +56,9 @@ export class TestBattleStore extends InMemoryBattleStore {
 
         let pokemon4 = new AddPokemonRequest();
         pokemon4.id = 1,
-        pokemon4.species = "azumarill";
+        pokemon4.species = "steelix";
         pokemon4.gender = "m";
-        pokemon4.ability = "hugepower";
+        pokemon4.ability = "sturdy";
         pokemon4.hiddenPowerType = "ICE";
         pokemon4.item = 'stickybarb';
 
@@ -151,8 +151,8 @@ export class TestBattleStore extends InMemoryBattleStore {
         await BATTLE_SERVICE.create(room);
         await BATTLE_SERVICE.chooseLead(room.id, trainer1.id, 1);
         await BATTLE_SERVICE.chooseLead(room.id, trainer2.id, 1);
-        await BATTLE_SERVICE.move(room.id, trainer1.id, 'wish');
-        await BATTLE_SERVICE.move(room.id, trainer2.id, 'bellydrum');
+        await BATTLE_SERVICE.move(room.id, trainer1.id, 'outrage');
+        await BATTLE_SERVICE.move(room.id, trainer2.id, 'doubleteam');
         let numLoops = 0;
         for (let i = 0; i < numLoops; i++) {
             await BATTLE_SERVICE.move(room.id, trainer1.id, 'doubleteam');

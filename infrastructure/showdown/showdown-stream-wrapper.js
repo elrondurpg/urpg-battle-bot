@@ -260,11 +260,23 @@ export class ShowdownStreamWrapper {
                         first = false;
                     }
                     let tag = status;
-                    let volatile = Showdown.default.Dex.textCache.Default[status];
-                    if (volatile) {
-                        let volatileName = volatile.volatileName;
-                        if (volatileName) {
-                            tag = volatileName;
+                    let volatile = activePokemon.volatiles[status];
+                    if (status == 'lockedmove') {
+                        let moveId = volatile.move;
+                        if (moveId) {
+                            let move = Showdown.default.Dex.textCache.Moves[moveId];
+                            if (move) {
+                                tag = move.name;
+                            }
+                        }
+                    }
+                    else {
+                        let volatileText = Showdown.default.Dex.textCache.Default[status];
+                        if (volatileText) {
+                            let volatileName = volatileText.volatileName;
+                            if (volatileName) {
+                                tag = volatileName;
+                            }
                         }
                     }
                     if (tag != "[silent]") {
