@@ -136,7 +136,7 @@ export class ShowdownStreamWrapper {
         let teamType = this._room.rules.teamType.toLowerCase();
         if (teamType == "preview") {
             for (let side of this._stream.battle.sides) {
-                message += `**${side.name}'s Team**\n\`\`\``;
+                message += `**${side.name}'s Team**\n\`\`\`\n`;
                 for (let pokemon of side.pokemon) {
                     let currentSpecies = pokemon.species;
                     let currentBaseSpecies = currentSpecies.baseSpecies;

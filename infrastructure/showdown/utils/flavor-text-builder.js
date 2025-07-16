@@ -254,6 +254,30 @@ export class FlavorTextBuilder {
                         message = text;
                     }
                 }
+                else {
+                    let effectName = this.effect.replaceAll(regex, "").toLowerCase();
+                    let effect = Showdown.default.Dex.textCache.Default[effectName];
+                    if (effect) {
+                        let text = effect[action];
+                        if (text) {
+                            if (text.startsWith("#.")) {
+                                // if the action text starts with #., 
+                                // use the action text for the action of that name within the same object
+                                message = effect[text.replaceAll("#.", "")];
+                            }
+                            else if (text.startsWith("#")) {
+                                // if the action text starts with #, 
+                                // use the action text for the object of the same type with that name
+                                effectName = text.replaceAll(regex, "").toLowerCase();
+                                effect = Showdown.default.Dex.textCache.Default[effectName];
+                                message = effect[action];
+                            }
+                            else {
+                                message = text;
+                            }
+                        }
+                    }
+                }
                 if (shouldShowAbilityActivation) {
                     text = message;
                     let abilityActivation = new FlavorTextBuilder("abilityActivation")
