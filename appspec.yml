@@ -2,7 +2,13 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /home/ec2-user/urpg-battle-bot
+    destination: /etc/battlebot/urpg-battle-bot
+permissions:
+  - object: /etc/battlebot/urpg-battle-bot
+    pattern: "*"
+    owner: battlebot
+    group: battlebot
+    mode: 744
 hooks:
   ApplicationStart:
     - location: scripts/start.sh

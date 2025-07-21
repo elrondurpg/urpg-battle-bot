@@ -11,7 +11,7 @@ if [[ $pid -gt 0 ]]; then
 fi
 
 yum install -y nodejs npm
-cd /home/ec2-user/urpg-battle-bot
-cp /home/ec2-user/.env /home/ec2-user/urpg-battle-bot
+cd /etc/battlebot /urpg-battle-bot
+cp /etc/battlebot/.env /etc/battlebot/urpg-battle-bot
 npm install
-nohup npm run start &
+#nohup npm run start &
