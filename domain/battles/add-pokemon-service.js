@@ -240,7 +240,7 @@ function validateTeraType(type, species) {
 function validateConversionType(type, species) {
     if (!species.learnset.some(moveName => {
         let move = MOVE_SERVICE.get(moveName);
-        return move.type.toLowerCase() == pokemon.conversionType;
+        return move.type.toLowerCase() == type;
     })) {
         throw new BadRequestError(`${species.name} can't have Conversion Type = ${type.name} because it doesn't learn a move of that type! (from: Conversion Type)`);
     }
